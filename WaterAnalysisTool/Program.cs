@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OfficeOpenXml;
 
 namespace WaterAnalysisTool
 {
@@ -10,9 +12,17 @@ namespace WaterAnalysisTool
     {
         static void Main(string[] args)
         {
-            //This is a change
-            Console.WriteLine("CHANGINNNNN'");
-            //Courtney changed something now
+            FileInfo newFile = new FileInfo(@"sample1.xlsx");
+            if(newFile.Exists)
+            {
+                newFile.Delete();
+                newFile = new FileInfo(@"sample1.xlsx");
+            }
+
+            using (ExcelPackage package = new ExcelPackage(newFile))
+            {
+                
+            }
         }
     }
 }
