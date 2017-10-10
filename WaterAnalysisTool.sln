@@ -1,14 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaterAnalysisTool", "WaterAnalysisTool\WaterAnalysisTool.csproj", "{E82A3A89-042E-4951-9F57-D57D8E688446}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Referenced Assemblies", "Referenced Assemblies", "{A1CEBB77-91D9-4613-94AC-6DF4D9F259A0}"
-	ProjectSection(SolutionItems) = preProject
-		Referenced Assemblies\EPPlus.dll = Referenced Assemblies\EPPlus.dll
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,5 +18,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EDEAEBD6-A1FD-415C-B52D-8A316D1D87E2}
 	EndGlobalSection
 EndGlobal
