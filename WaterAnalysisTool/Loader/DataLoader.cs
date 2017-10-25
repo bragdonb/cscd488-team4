@@ -20,6 +20,7 @@ namespace WaterAnalysisTool.Loader
         /* Constructors */
         public DataLoader(StreamReader inf, ExcelPackage outf)
         {
+            // tbh I don't remember why I included the input file...
             this.Input = inf;
             this.Output = outf;
         }
@@ -28,6 +29,13 @@ namespace WaterAnalysisTool.Loader
         public void Load()
         {
             // TODO
+            // Load performs the following functions:
+            // 1. Write QC Sample, Certified Val Sample, and Sample data into the Data worksheet
+            //  1.1 Method Header, Analysis Date, and Sample Name Descriptor in as first three rows
+            //  1.2 Bolded Element Name headers (x2 one for mg/L and another for RSD)
+            //  1.3 Bolded Units (x2 one for mg/L and another for RSD)
+            //  1.4 Write QC, 
+            // 2. Write Calibration Sample data into the Calibration Standards Worksheet
         }
 
         // TODO

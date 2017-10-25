@@ -1,4 +1,4 @@
-﻿using OfficeOpenXml; // This is the top namespace for EPPlus
+﻿using OfficeOpenXml; // This is the top namespace for EPPlus, if your reference isn't found use the command -> Update-Package -reinstall in the Nuget Console
 using System.IO;
 
 namespace WaterAnalysisTool

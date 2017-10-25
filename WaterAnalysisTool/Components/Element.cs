@@ -16,7 +16,7 @@ namespace WaterAnalysisTool.Components
         {
             this.Name = name;
             this.Units = units;
-            this.Average = avg; ;
+            this.Average = avg;
             this.StandardDeviation = stddev;
             this.RSD = rsd;
         }
