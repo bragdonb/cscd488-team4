@@ -6,105 +6,72 @@ namespace WaterAnalysisTool.Components
     class Sample
     {
         /* Attributes */
-        private int l = 1;
+        private List<Element> elements;
+        private String method;
+        private String name;
+        private String comment;
+        private String runTime;
+        private String sampleType;
+        private int repeats;
 
         #region Properties
-        private List<Element> Elements
+        public List<Element> Elements
         {
-            set
-            {
-                if(l == 0)
-                {
-                    this.Elements = value;
-                }
-            }
-            get { return this.Elements; }
+            get { return this.elements; }
         }
 
-        private String Name
+        public String Name
         {
-            set
-            {
-                if (l == 0)
-                {
-                    this.Name = value;
-                }
-            }
-            get { return this.Name; }
+            get { return this.name; }
         }
 
-        private String Comment
+        public String Comment
         {
-            set
-            {
-                if (l == 0)
-                {
-                    this.Comment = value;
-                }
-            }
-            get { return this.Comment; }
+            get { return this.comment; }
         }
 
-        private String RunTime
+        public String RunTime
         {
-            set
-            {
-                if (l == 0)
-                {
-                    this.RunTime = value;
-                }
-            }
-            get { return this.RunTime; }
+            get { return this.runTime; }
         }
 
-        private String SampleType
+        public String SampleType
         {
-            set
-            {
-                if (l == 0)
-                {
-                    this.SampleType = value;
-                }
-            }
-            get { return this.SampleType; }
+            get { return this.sampleType; }
         }
 
-        private Int32 Repeats
+        public Int32 Repeats
         {
-            set
-            {
-                if (l == 0)
-                {
-                    this.Repeats = value;
-                }
-            }
-            get { return this.Repeats; }
+            get { return this.repeats; }
+        }
+
+        public String Method
+        {
+            get { return this.method; }
         }
         #endregion
 
         /* Constructors */
-        public Sample(String name, String comment, String runTime, String sampleType, Int32 rpts)
+        public Sample(String method, String name, String comment, String runTime, String sampleType, Int32 rpts)
         {
-            l = 0;
-            this.Name = name;
-            this.Comment = comment;
-            this.RunTime = runTime;
-            this.SampleType = sampleType;
-            this.Repeats = rpts;
-            this.Elements = new List<Element>();
-            l = 1;
+            this.method = method;
+            this.name = name;
+            this.comment = comment;
+            this.runTime = runTime;
+            this.sampleType = sampleType;
+            this.repeats = rpts;
+            this.elements = new List<Element>();
         }
 
-        public Sample(String name, String runTime, String sampleType, Int32 rpts)
+        public Sample(String method, String name, String runTime, String sampleType, Int32 rpts)
         {
-            l = 0;
-            this.Name = name;
-            this.Comment = "";
-            this.RunTime = runTime;
-            this.SampleType = sampleType;
-            this.Repeats = rpts;
-            this.Elements = new List<Element>();
-            l = 1;
+            this.method = method;
+            this.name = name;
+            this.comment = "";
+            this.runTime = runTime;
+            this.sampleType = sampleType;
+            this.repeats = rpts;
+            this.elements = new List<Element>();
         }
 
         /* Public functions */

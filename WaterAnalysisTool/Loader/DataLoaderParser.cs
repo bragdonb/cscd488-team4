@@ -25,6 +25,11 @@ namespace WaterAnalysisTool.Loader
         public void Parse()
         {
             // TODO
+            // Parse performs the following functions
+            // 1. Read each sample from the input stream
+            //  1.1 Create Sample
+            //  1.2 Add elements to the sample
+            //  1.3 Add the sample to the correct list (using Loader.Add<SampleType> see comments in DataLoader by each list)
         }
 
         public Element CreateElement(String line)

@@ -5,80 +5,47 @@ namespace WaterAnalysisTool.Components
     class Element
     {
         /* Attributes */
-        private int l = 1;
+        private String name;
+        private String units;
+        private double avg;
+        private double stddev;
+        private double rsd;
 
         #region Properties
-        private String Name
+        public String Name
         {
-            set
-            {
-                if (l == 0)
-                {
-                    this.Name = value;
-                }
-            }
-            get { return this.Name; }
+            get { return this.name; }
         }
 
-        private String Units
+        public String Units
         {
-            set
-            {
-                if (l == 0)
-                {
-                    this.Units = value;
-                }
-            }
-            get { return this.Units; }
+            get { return this.units; }
         }
 
-        private Double Average
+        public Double Average
         {
-            set
-            {
-                if (l == 0)
-                {
-                    this.Average = value;
-                }
-            }
-            get { return this.Average; }
+            get { return this.avg; }
         }
 
-        private Double StandardDeviation
+        public Double StandardDeviation
         {
-            set
-            {
-                if (l == 0)
-                {
-                    this.StandardDeviation = value;
-                }
-            }
-            get { return this.StandardDeviation; }
+            get { return this.stddev; }
         }
 
-        private Double RSD
+        public Double RSD
         {
-            set
-            {
-                if (l == 0)
-                {
-                    this.RSD = value;
-                }
-            }
-            get { return this.RSD; }
+            get { return this.rsd; }
         }
         #endregion
 
         /* Constructors */
         public Element(String name, String units, Double avg, Double stddev, Double rsd)
         {
-            l = 0;
-            this.Name = name;
-            this.Units = units;
-            this.Average = avg;
-            this.StandardDeviation = stddev;
-            this.RSD = rsd;
-            l = 1;
+            this.name = name;
+            this.units = units;
+            this.avg = avg;
+            this.stddev = stddev;
+            this.rsd = rsd;
         }
 
         /* Public Functions */
