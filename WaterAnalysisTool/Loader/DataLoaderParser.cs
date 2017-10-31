@@ -24,7 +24,10 @@ namespace WaterAnalysisTool.Loader
         /* Public Methods */
         public void Parse()
         {
-            // TODO
+            string line = "";
+            this.Input.ReadLine(); // Consumes the first line of the file that is always empty
+
+            this.ParseHeader(line);
         }
 
         public Element CreateElement(String line)
@@ -37,6 +40,48 @@ namespace WaterAnalysisTool.Loader
         {
             // TODO
             return null;
+        }
+
+        public void AddElementToSample()
+        {
+
+        }
+
+        public void AddSampleToDataLoader()
+        {
+
+        }
+
+        public Sample ParseHeader(string line)
+        {
+            Sample samp = null;
+
+            if (this.Input.Peek() >= 0)
+            {
+                line = this.Input.ReadLine();
+
+                if (string.Compare(line, "[Sample Header]") == 0)
+                {
+                    List<string> stringList = new List<string>();
+                    while (this.Input.Peek() >= 0)
+                    {
+                        stringList.Add(this.Input.ReadLine());
+                    }
+
+                    samp = new Sample(stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // At this point I'm including the Comment member variable (Sample) whether it is blank in the input file or not
+                }                                                                                                             // If she doesn't want any blank comments in the .xlsx file I will change it. I just figured this way was easier
+            }
+            return samp;
+        }
+
+        public void parseResults()
+        {
+
+        }
+
+        public void parseInternalStandards()
+        {
+
         }
     }
 }
