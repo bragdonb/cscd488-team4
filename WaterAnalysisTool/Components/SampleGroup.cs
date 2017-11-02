@@ -65,11 +65,13 @@ namespace WaterAnalysisTool.Components
 
         private List<Double> CalculateAverage()
         {
+            Double avg = 0;
             foreach(Sample s in this.samples)
             {
                 foreach(Element e in s.Elements)
                 {
-                    
+                    //i am changing things
+                    avg = e.Average;
                 }
             }
             return null;
