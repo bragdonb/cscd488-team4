@@ -9,6 +9,8 @@ namespace WaterAnalysisTool.Loader
     class DataLoader
     {
         /* Attributes */
+        // These need to change to SampleGroup classes
+        // Certified values will need to be a list of SampleGroups because there can be different sample names in that group 
         private List<Sample> CalibrationSamples;        // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
         private List<Sample> CalibrationsStandards;     // Calibration Standard -> Sample Type: Cal
         private List<Sample> QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC
@@ -153,12 +155,7 @@ namespace WaterAnalysisTool.Loader
                     break;
 
                 case "CertifiedValuesSamples":
-                    dataws.Cells[row, 1].Value = "Certified Values";
-                    // TODO figure out what the heck the numbers in this row come from and write them
-                    break;
-
-                case "Samples":
-                    dataws.Cells[row, 1].Value = "Samples";
+                    //calculate average/rsd(%)/recovery(%)
                     break;
 
                 default:
@@ -184,10 +181,29 @@ namespace WaterAnalysisTool.Loader
 
                     // Write Analyte concentrations
                     dataws.Cells[row, col + 1].Value = e.Average;
-                    // TODO apply QA/QC formatting if applicable to sample type
 
+                    // TODO apply QA/QC formatting if applicable to sample type
+                    switch (type)
+                    {
+                        case "CalibrationSamples":
+                            //calculate average/LOD/LOQ
+
+                            break;
+
+                        case "QualityControlSamples":
+                            //calculate average and %difference
+                            break;
+
+                        case "CertifiedValuesSamples":
+                            //calculate average/rsd(%)/recovery(%)
+                            break;
+
+                        default:
+                            break;
+                    }
                     // Write RSD
                     dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
+
                     // TODO apply QA/AC formatting if applicable to sample type
 
                     col++;
