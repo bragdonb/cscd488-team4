@@ -53,8 +53,8 @@ namespace WaterAnalysisTool.Loader
                 throw new ArgumentOutOfRangeException("Invalid number of worksheets present in workbook.\n");
             #endregion
 
-            //DataLoaderParser parser = new DataLoaderParser(this, Input);
-            //parser.Parse();
+            DataLoaderParser parser = new DataLoaderParser(this, Input);
+            parser.Parse();
 
             var dataws = Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
@@ -85,7 +85,7 @@ namespace WaterAnalysisTool.Loader
                 col++;
             }
 
-            // Write QC/QA samples
+            // Write samples
             int row = 7; // Start at row 7, col 1
 
             if(CalibrationSamples.Count > 0)
@@ -99,6 +99,10 @@ namespace WaterAnalysisTool.Loader
 
             if(Samples.Count > 0)
                 row = WriteSamples(dataws, Samples, nameof(Samples), row);
+
+            // Write calibration standards
+            var calibws = Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
+            WriteStandards(calibws, CalibrationSamples);
         } // end Load
 
         #region Add<Sample>
@@ -274,5 +278,44 @@ namespace WaterAnalysisTool.Loader
 
             return  row + 2;
         }// end WriteSamples
+
+        private void WriteStandards(ExcelWorksheet calibws, List<Sample> standards)
+        {
+            // Write element header rows
+            Sample headerSample = standards[standards.Count - 1];
+
+            int col = 3; //Start at row 2 col 3
+            foreach (Element e in headerSample.Elements)
+            {
+                // Concentration headers
+                calibws.Cells[2, col].Value = e.Name;
+                calibws.Cells[2, col].Style.Font.Bold = true;
+
+                calibws.Cells[3, col].Value = e.Units;
+                calibws.Cells[3, col].Style.Font.Bold = true;
+
+                col++;
+            }
+
+            // Write standards data
+            int row = 4;
+            col = 1;
+            foreach (Sample s in standards)
+            {
+                calibws.Cells[row, col].Value = s.Name;
+                calibws.Cells[row, ++col].Value = s.RunTime;
+
+                foreach (Element e in s.Elements)
+                {
+                    calibws.Cells[row, ++col].Value = e.Average;
+                }
+            }
+
+            // Create the calibration curve graph
+            // 1. Open the ICP-OESstandards-master list Excel sheet or some config sheet where the stock solution concentrations can be found
+            //  1.1 Have to worry about not every concentration in the standards list, what about using the ratio in their name and multiplying by the known mg/L
+            // 2. Create a graph with the measured counts per second in the standards list over their respective stock solution concentration
+
+        }// end WriteStandards
     }// end DataLoader class    
 }// end WaterAnalysisTool.Loader namespace

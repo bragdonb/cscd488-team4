@@ -7,6 +7,11 @@ namespace WaterAnalysisTool
 {
     class Program
     {
+        static void Main(string[] args)
+        {
+        
+        }
+
         /* EPPlus Example. Find documentation at: http://www.nudoq.org/#!/Packages/EPPlus/EPPlus/OfficeOpenXml
         static void Main(string[] args)
         {
@@ -40,7 +45,7 @@ namespace WaterAnalysisTool
             }
         }
         */
-        /* DataLoader Load() Tester */
+        /* DataLoader Load() Tester
         static void Main(string[] args)
         {
             FileInfo fi = new FileInfo(@"tester.xlsx");
@@ -94,7 +99,7 @@ namespace WaterAnalysisTool
                 calib2.AddElement(new Element("Element 10", "Units", 10.0, 10.0, 1.0));
                 loader.AddCalibrationSample(calib2);
 
-                loader.Load();
+                loader.Load(); // Load calls Parse, don't need to in main
 
                 //System.Console.WriteLine(ws.Cells[1, 5].Address);
                 //System.Console.ReadLine();
@@ -102,5 +107,6 @@ namespace WaterAnalysisTool
                 p.Save();
             }
         }
+        */
     }
 }
