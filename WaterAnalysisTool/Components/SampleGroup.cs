@@ -8,39 +8,39 @@ namespace WaterAnalysisTool.Components
         /* Attributes */
         private List<Sample> samples;
         private List<Double> average;
-        private List<Double> loq;
         private List<Double> lod;
+        private List<Double> loq;
         private List<Double> percentDifference;
         private List<Double> rsd;
         private List<Double> recovery;
         
         #region Properties
-        public Double Average
+        public List<Double> Average
         {
             get { return this.average; }
         }
 
-        public Double LOQ
+        public List<Double> LOQ
         {
             get { return this.loq; }
         }
 
-        public Double LOD
+        public List<Double> LOD
         {
             get { return this.lod; }
         }
 
-        public Double PercentDifference
+        public List<Double> PercentDifference
         {
             get { return this.percentDifference; }
         }
 
-        public Double RSD
+        public List<Double> RSD
         {
             get { return this.rsd; }
         }
 
-        public Double Recovery
+        public List<Double> Recovery
         {
             get { return this.recovery; }
         }
@@ -55,51 +55,78 @@ namespace WaterAnalysisTool.Components
         public SampleGroup(List<Sample> sampleList)
         {
             this.samples = sampleList;
+            CalculateAverage();
+            CalculateLODandLOQandRSD();
 
-            this.loq = CalculateLOQ();
-            this.lod = CalculateLOD();
-            this.percentDifference = CalculatePercentDifference();
-            this.rsd = CalculateRSD();
-            this.recovery = CalculateRecovery();
+            //not finished
+            CalculatePercentDifference();
+            CalculateRecovery();
         }
 
-        private List<Double> CalculateAverage()
+        private void CalculateAverage()
         {
-            Double avg = 0;
+            this.average = new List<Double>();
+
+            int count = 0, index = 0;
+
             foreach(Sample s in this.samples)
             {
+                count++;
+                index = 0;
                 foreach(Element e in s.Elements)
                 {
-                    //i am changing things
-                    avg = e.Average;
+                    this.average[index] += e.Average;
+                    index++;
                 }
             }
-            return null;
-        }
 
-        private List<Double> CalculateLOQ()
-        {
-            return null;
-        }
+            for(index = 0; index < this.average.Count; index++)
+                this.average[index] = this.average[index] / count;
 
-        private List<Double> CalculateLOD()
-        {
-            return null;
-        }
+        }//end CalculateAverage()
 
-        private List<Double> CalculatePercentDifference()
+        //maybe change this name.....hahaha
+        private void CalculateLODandLOQandRSD()
         {
-            return null;
-        }
+            this.lod = new List<Double>();
+            this.loq = new List<Double>();
+            this.rsd = new List<Double>();
+            
+            int count = 0, index = 0;
 
-        private List<Double> CalculateRSD()
-        {
-            return null;
-        }
+            foreach (Sample s in this.samples)
+            {
+                count++;
+                index = 0;
+                foreach (Element e in s.Elements)
+                {
+                    this.lod[index] += Math.Pow((e.Average - this.average[index]), 2);
+                    index++;
+                }
+            }
 
-        private List<Double> CalculateRecovery()
+            for (index = 0; index < this.average.Count; index++)
+            {
+                this.lod[index] = 3 * Math.Sqrt(this.lod[index] / count);
+                this.loq[index] = 10 * Math.Sqrt(this.lod[index] / count);
+                this.rsd[index] = (Math.Sqrt(this.lod[index] / count)) / this.average[index] * 100;
+            }
+
+        }//end CalculateLODandLOQandRSD()
+
+        private void CalculatePercentDifference()
         {
-            return null;
-        }
+            this.percentDifference = new List<Double>();
+            //TODO Find out how to retrieve Stated Values, which are needed to calculate percent difference
+            
+        }//end CalculatePercentDifference()
+
+        private void CalculateRecovery()
+        {
+            this.recovery = new List<Double>();
+            //TODO Find out how to retrieve Stated Values, which are needed to calculate recovery(%)
+
+        }//CalculateRecovery()
+
     }
 }
