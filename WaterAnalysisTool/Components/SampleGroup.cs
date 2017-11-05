@@ -63,6 +63,7 @@ namespace WaterAnalysisTool.Components
             CalculateRecovery();
         }
 
+        #region Private Methods
         private void CalculateAverage()
         {
             this.average = new List<Double>();
@@ -129,4 +130,5 @@ namespace WaterAnalysisTool.Components
         }//CalculateRecovery()
 
     }
+    #endregion
 }
