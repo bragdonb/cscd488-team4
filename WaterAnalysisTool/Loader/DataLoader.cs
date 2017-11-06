@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing.Color;
 using System.IO;
 using System.Collections.Generic;
 using OfficeOpenXml;
@@ -85,21 +86,21 @@ namespace WaterAnalysisTool.Loader
             int row = 7; // Start at row 7, col 1
 
             if(CalibrationSamples.Samples.Count > 0)
-                row = WriteSamples(dataws, CalibrationSamples.Samples, nameof(CalibrationSamples), row);
+                row = WriteSamples(dataws, CalibrationSamples, nameof(CalibrationSamples), row);
 
             if(QualityControlSamples.Samples.Count > 0)
-                row = WriteSamples(dataws, QualityControlSamples.Samples, nameof(QualityControlSamples), row);
+                row = WriteSamples(dataws, QualityControlSamples, nameof(QualityControlSamples), row);
 
             foreach (SampleGroup g in CertifiedValueSamples)
             {
                 if (g.Samples.Count > 0)
-                    row = WriteSamples(dataws, g.Samples, nameof(CertifiedValueSamples), row);
+                    row = WriteSamples(dataws, g, nameof(CertifiedValueSamples), row);
             }
 
             foreach (SampleGroup g in Samples)
             {
                 if (Samples.Count > 0)
-                    row = WriteSamples(dataws, g.Samples, nameof(Samples), row);
+                    row = WriteSamples(dataws, g, nameof(Samples), row);
             }
 
             // Write calibration standards
@@ -151,11 +152,12 @@ namespace WaterAnalysisTool.Loader
 
         /* Private Methods */
         // TODO this needs to be rewritten to handle SampleGroups as an input; gives access to calculations already performed
-        private int WriteSamples(ExcelWorksheet dataws, List<Sample> samples, String type, int row)
+        private int WriteSamples(ExcelWorksheet dataws, SampleGroup samples, String type, int row)
         {
             int count = 0;
             int rowStart, rowEnd, col;
 
+            // Write header sample name
             switch (type)
             {
                 case "CalibrationSamples":
@@ -164,14 +166,15 @@ namespace WaterAnalysisTool.Loader
 
                 case "QualityControlSamples":
                     dataws.Cells[row, 1].Value = "Stated Values";
-                    // TODO figure out what the heck the numbers in this row come from and write them
+                    // TODO write the first sample in this row (comes from second file)
                     break;
 
                 case "CertifiedValuesSamples":
-                    //calculate average/rsd(%)/recovery(%)
+                    // TODO write the first sample in this row (comes from second file)
                     break;
 
                 default:
+                    dataws.Cells[row, 1].Value = samples.Name;
                     break;
             }
 
@@ -180,7 +183,8 @@ namespace WaterAnalysisTool.Loader
             row++;
             rowStart = row;
 
-            foreach (Sample s in samples)
+            // Write sample data
+            foreach (Sample s in samples.Samples)
             {
                 col = 1;
                 count = 0;
@@ -195,29 +199,34 @@ namespace WaterAnalysisTool.Loader
                     // Write Analyte concentrations
                     dataws.Cells[row, col + 1].Value = e.Average;
 
-                    // TODO apply QA/QC formatting if applicable to sample type
-                    switch (type)
+                    // Do QA/QC formatting to analyt concentrations
+                    if(type == "Samples")
                     {
-                        case "CalibrationSamples":
-                            // average/LOD/LOQ
-                            break;
+                        // REQ-S3R2
+                        if (e.Average > this.CalibrationSamples.LOD[count])
+                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.Firebrick);
 
-                        case "QualityControlSamples":
-                            // average and %difference
-                            break;
+                        // REQ-S3R3
+                        else if (e.Average < this.CalibrationSamples.LOQ[count] && e.Average > this.CalibrationSamples.LOD[count])
+                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.Orange);
 
-                        case "CertifiedValuesSamples":
-                            // average/rsd(%)/recovery(%)
-                            break;
+                        // REQ-S3R4
+                        foreach (SampleGroup g in this.CertifiedValueSamples)
+                            if (g.Average[count] < e.Average + 0.5 && g.Average[count] > e.Average - 0.5)
+                                if (g.Recovery[count] > 110 || g.Recovery[count] < 90)
+                                    dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.DodgerBlue);
+                    
+                        // REQ-S3R6
 
-                        default:
-                            break;
+                    }
+
+                    else if(type == "CalibrationSamples")
+                    {
+                        // REQ-S3R5
                     }
 
                     // Write RSD
                     dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
-
-                    // TODO apply QA/AC formatting if applicable to sample type
 
                     col++;
                 }
@@ -271,7 +280,7 @@ namespace WaterAnalysisTool.Loader
 
                     break;
 
-                case "CertifiedValueSamples": // TODO figure out how the heck to split up certified values
+                case "CertifiedValueSamples":
                     row++;
                     dataws.Cells[row, 1].Value = "average";
                     dataws.Cells[row, 1].Style.Font.Bold = true;

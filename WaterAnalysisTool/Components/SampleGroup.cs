@@ -6,6 +6,7 @@ namespace WaterAnalysisTool.Components
     class SampleGroup
     {
         /* Attributes */
+        private String name;
         private List<Sample> samples;
         private List<Double> average;
         private List<Double> lod;
@@ -15,6 +16,11 @@ namespace WaterAnalysisTool.Components
         private List<Double> recovery;
         
         #region Properties
+        public String Name
+        {
+            get { return this.name; }
+        }
+
         public List<Double> Average
         {
             get { return this.average; }
@@ -52,8 +58,9 @@ namespace WaterAnalysisTool.Components
         #endregion
 
         /* Constructors */
-        public SampleGroup(List<Sample> sampleList)
+        public SampleGroup(List<Sample> sampleList, String name)
         {
+            this.name = name;
             this.samples = sampleList;
             CalculateAverage();
             CalculateLODandLOQandRSD();
