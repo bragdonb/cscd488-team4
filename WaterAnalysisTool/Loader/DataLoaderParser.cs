@@ -57,21 +57,19 @@ namespace WaterAnalysisTool.Loader
 
 
 
-        public Sample CreateSample (String name, String comment, String runTime, String sampleType, Int32 repeats)
+        /* Private Methods */
+
+
+
+        private Sample CreateSample(String name, String comment, String runTime, String sampleType, Int32 repeats)
         {
             // TODO More error checking?
 
-            if (name != null && comment != null && runTime != null && sampleType != null && repeats > -1)
-            {
-                return new Sample(name, comment, runTime, sampleType, repeats);
-            }
-            else
-                throw new ArgumentNullException("The sample is null\n");
+            if (name == null || comment == null || runTime == null || sampleType == null || repeats > -1)
+                throw new ArgumentNullException("The sample you are trying to create will contain a null member variable\n");
+
+            return new Sample(name, comment, runTime, sampleType, repeats);
         }
-
-
-
-        /* Private Methods */
 
 
 
