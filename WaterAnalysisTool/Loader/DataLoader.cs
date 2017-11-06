@@ -11,11 +11,17 @@ namespace WaterAnalysisTool.Loader
         /* Attributes */
         // These need to change to SampleGroup classes
         // Certified values will need to be a list of SampleGroups because there can be different sample names in that group 
-        private List<Sample> CalibrationSamples;        // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
-        private List<Sample> CalibrationsStandards;     // Calibration Standard -> Sample Type: Cal
-        private List<Sample> QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC
-        private List<Sample> CertifiedValueSamples;     // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC
-        private List<Sample> Samples;                   // Generic Samples -> Sample Type: Unk
+        //private List<Sample> CalibrationSamples;        // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
+        //private List<Sample> CalibrationsStandards;     // Calibration Standard -> Sample Type: Cal
+        //private List<Sample> QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC
+        //private List<Sample> CertifiedValueSamples;     // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC
+        //private List<Sample> Samples;                   // Generic Samples -> Sample Type: Unk
+
+        private SampleGroup CalibrationSamples;
+        private SampleGroup CalibrationStandards;
+        private SampleGroup QualityControlSamples;
+        private List<SampleGroup> CertifiedValueSamples;
+        private List<SampleGroup> Samples;
 
         private StreamReader Input;
         private ExcelPackage Output;
@@ -26,17 +32,13 @@ namespace WaterAnalysisTool.Loader
             this.Input = inf;
             this.Output = outf;
 
-            this.CalibrationSamples = new List<Sample>();
-            this.CalibrationsStandards = new List<Sample>();
-            this.QualityControlSamples = new List<Sample>();
-            this.CertifiedValueSamples = new List<Sample>();
-            this.Samples = new List<Sample>();
+            this.CertifiedValueSamples = new List<SampleGroup>();
+            this.Samples = new List<SampleGroup>();
         }
 
         /* Public Methods */
         public void Load()
         {
-            // TODO
             // Load performs the following functions:
             // 1. Write QC Sample, Certified Val Sample, and Sample data into the Data worksheet
             //  1.1 Method Header, Analysis Date, and Sample Name Descriptor in as first three rows
@@ -61,7 +63,7 @@ namespace WaterAnalysisTool.Loader
             var dataws = Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
             // Write header info
-            Sample headerSample = Samples[Samples.Count - 1];
+            Sample headerSample = Samples[Samples.Count - 1].Samples[Samples[Samples.Count - 1].Samples.Count - 1]; // good God
             dataws.Cells["A1"].Value = headerSample.Method;
             dataws.Cells["A2"].Value = headerSample.RunTime.Split(' ')[0];
             dataws.Cells["A2"].Value = Output.Workbook.Properties.Title; // Assumes this was set to like the filename, change later to accept user input for title?
@@ -90,52 +92,66 @@ namespace WaterAnalysisTool.Loader
             // Write samples
             int row = 7; // Start at row 7, col 1
 
-            if(CalibrationSamples.Count > 0)
-                row = WriteSamples(dataws, CalibrationSamples, nameof(CalibrationSamples), row);
+            if(CalibrationSamples.Samples.Count > 0)
+                row = WriteSamples(dataws, CalibrationSamples.Samples, nameof(CalibrationSamples), row);
 
-            if(QualityControlSamples.Count > 0)
-                row = WriteSamples(dataws, QualityControlSamples, nameof(QualityControlSamples), row);
+            if(QualityControlSamples.Samples.Count > 0)
+                row = WriteSamples(dataws, QualityControlSamples.Samples, nameof(QualityControlSamples), row);
 
-            if(CertifiedValueSamples.Count > 0)
-                row = WriteSamples(dataws, CertifiedValueSamples, nameof(CertifiedValueSamples), row);
+            foreach (SampleGroup g in CertifiedValueSamples)
+            {
+                if (g.Samples.Count > 0)
+                    row = WriteSamples(dataws, g.Samples, nameof(CertifiedValueSamples), row);
+            }
 
-            if(Samples.Count > 0)
-                row = WriteSamples(dataws, Samples, nameof(Samples), row);
+            foreach (SampleGroup g in Samples)
+            {
+                if (Samples.Count > 0)
+                    row = WriteSamples(dataws, g.Samples, nameof(Samples), row);
+            }
 
             // Write calibration standards
             var calibws = Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
-            WriteStandards(calibws, CalibrationSamples);
+            WriteStandards(calibws, CalibrationStandards);
         } // end Load
 
         #region Add<Sample>
-        public void AddCalibrationSample(Sample sample)
+        public void AddCalibrationSampleGroup(SampleGroup sample)
         {
             if (sample == null)
-                throw new ArgumentNullException("Sample is null.\n");
+                throw new ArgumentNullException("SampleGroup (Calibration Sample) is null.\n");
 
-            this.CalibrationSamples.Add(sample);
+            this.CalibrationSamples = sample;
         }
 
-        public void AddQualityControlSample(Sample sample)
+        public void AddCalibrationStandard(SampleGroup sample)
         {
             if (sample == null)
-                throw new ArgumentNullException("Sample is null.\n");
+                throw new ArgumentNullException("SampleGroup (Calibration Standard) is null.\n");
 
-            this.QualityControlSamples.Add(sample);
+            this.CalibrationStandards = sample;
         }
 
-        public void AddCertifiedValueSample(Sample sample)
+        public void AddQualityControlSampleGroup(SampleGroup sample)
         {
             if (sample == null)
-                throw new ArgumentNullException("Sample is null.\n");
+                throw new ArgumentNullException("SampleGroup (Quality Control) is null.\n");
+
+            this.QualityControlSamples = sample;
+        }
+
+        public void AddCertifiedValueSampleGroup(SampleGroup sample)
+        {
+            if (sample == null)
+                throw new ArgumentNullException("SampleGroup (Certified Value) is null.\n");
 
             this.CertifiedValueSamples.Add(sample);
         }
 
-        public void AddSample(Sample sample)
+        public void AddSampleGroup(SampleGroup sample)
         {
             if (sample == null)
-                throw new ArgumentNullException("Sample is null.\n");
+                throw new ArgumentNullException("SampleGroup (Generic) is null.\n");
 
             this.Samples.Add(sample);
         }
@@ -295,10 +311,10 @@ namespace WaterAnalysisTool.Loader
             return  row + 2;
         }// end WriteSamples
 
-        private void WriteStandards(ExcelWorksheet calibws, List<Sample> standards)
+        private void WriteStandards(ExcelWorksheet calibws, SampleGroup standards)
         {
             // Write element header rows
-            Sample headerSample = standards[standards.Count - 1];
+            Sample headerSample = standards.Samples[standards.Samples.Count - 1];
 
             int col = 3; //Start at row 2 col 3
             foreach (Element e in headerSample.Elements)
@@ -316,7 +332,7 @@ namespace WaterAnalysisTool.Loader
             // Write standards data
             int row = 4;
             col = 1;
-            foreach (Sample s in standards)
+            foreach (Sample s in standards.Samples)
             {
                 calibws.Cells[row, col].Value = s.Name;
                 calibws.Cells[row, ++col].Value = s.RunTime;
