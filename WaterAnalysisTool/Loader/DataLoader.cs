@@ -9,19 +9,11 @@ namespace WaterAnalysisTool.Loader
     class DataLoader
     {
         /* Attributes */
-        // These need to change to SampleGroup classes
-        // Certified values will need to be a list of SampleGroups because there can be different sample names in that group 
-        //private List<Sample> CalibrationSamples;        // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
-        //private List<Sample> CalibrationsStandards;     // Calibration Standard -> Sample Type: Cal
-        //private List<Sample> QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC
-        //private List<Sample> CertifiedValueSamples;     // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC
-        //private List<Sample> Samples;                   // Generic Samples -> Sample Type: Unk
-
-        private SampleGroup CalibrationSamples;
-        private SampleGroup CalibrationStandards;
-        private SampleGroup QualityControlSamples;
-        private List<SampleGroup> CertifiedValueSamples;
-        private List<SampleGroup> Samples;
+        private SampleGroup CalibrationSamples;             // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
+        private SampleGroup CalibrationStandards;           // Calibration Standard -> Sample Type: Cal
+        private SampleGroup QualityControlSamples;          // Stated Values (CCV) -> Sample Type: QC
+        private List<SampleGroup> CertifiedValueSamples;    // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC
+        private List<SampleGroup> Samples;                  // Generic Samples -> Sample Type: Unk
 
         private StreamReader Input;
         private ExcelPackage Output;
@@ -158,6 +150,7 @@ namespace WaterAnalysisTool.Loader
         #endregion
 
         /* Private Methods */
+        // TODO this needs to be rewritten to handle SampleGroups as an input; gives access to calculations already performed
         private int WriteSamples(ExcelWorksheet dataws, List<Sample> samples, String type, int row)
         {
             int count = 0;
@@ -206,21 +199,21 @@ namespace WaterAnalysisTool.Loader
                     switch (type)
                     {
                         case "CalibrationSamples":
-                            //calculate average/LOD/LOQ
-
+                            // average/LOD/LOQ
                             break;
 
                         case "QualityControlSamples":
-                            //calculate average and %difference
+                            // average and %difference
                             break;
 
                         case "CertifiedValuesSamples":
-                            //calculate average/rsd(%)/recovery(%)
+                            // average/rsd(%)/recovery(%)
                             break;
 
                         default:
                             break;
                     }
+
                     // Write RSD
                     dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
 
