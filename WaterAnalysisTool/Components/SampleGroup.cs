@@ -5,7 +5,6 @@ namespace WaterAnalysisTool.Components
 {
     class SampleGroup
     {
-        //TODO: check for -1 elements
         /* Attributes */
         private String name;
         private List<Sample> samples;//first row contains data from Check Standards file
@@ -17,45 +16,21 @@ namespace WaterAnalysisTool.Components
         private List<Double> recovery;
         
         #region Properties
-        public String Name
-        {
-            get { return this.name; }
-        }
+        public String Name { get {return this.name;} }
 
-        public List<Double> Average
-        {
-            get { return this.average; }
-        }
+        public List<Double> Average { get { return this.average; } }
 
-        public List<Double> LOQ
-        {
-            get { return this.loq; }
-        }
+        public List<Double> LOQ { get { return this.loq; } }
 
-        public List<Double> LOD
-        {
-            get { return this.lod; }
-        }
+        public List<Double> LOD { get { return this.lod; } }
 
-        public List<Double> PercentDifference
-        {
-            get { return this.percentDifference; }
-        }
+        public List<Double> PercentDifference { get { return this.percentDifference; } }
 
-        public List<Double> RSD
-        {
-            get { return this.rsd; }
-        }
+        public List<Double> RSD { get { return this.rsd; } }
 
-        public List<Double> Recovery
-        {
-            get { return this.recovery; }
-        }
+        public List<Double> Recovery { get { return this.recovery; } }
 
-        public List<Sample> Samples 
-        {
-            get { return this.samples; }
-        }
+        public List<Sample> Samples { get { return this.samples; } }
         #endregion
 
         /* Constructors */
