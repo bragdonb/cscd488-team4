@@ -48,63 +48,95 @@ namespace WaterAnalysisTool.Loader
             //  1.3 Add the sample to the correct list (using Loader.Add<SampleType> see comments in DataLoader by each list)
 
             this.Input.ReadLine(); // Consumes the first line of the file that is always empty
-            this.ParseHeader();
+
+            while (this.Input.Peek() >= 0)
+            {
+                this.ParseHeader();
+            }
         }
 
 
 
-        public Sample CreateSample(String name, String comment, String runTime, String sampleType, Int32 repeats)
+        public Sample CreateSample (String name, String comment, String runTime, String sampleType, Int32 repeats)
         {
-            // TODO Add any needed error checking for passed in Strings
+            // TODO More error checking?
+
             if (name != null && comment != null && runTime != null && sampleType != null && repeats > -1)
             {
-
                 return new Sample(name, comment, runTime, sampleType, repeats);
             }
             else
-                throw new ArgumentNullException("The sample is null \n");
-        }
-
-
-
-        public void AddCalibrationSample()
-        {
-
-        }
-
-
-
-        public void AddCalibrationStandard()
-        {
-
-        }
-
-
-
-        public void AddQualityControlSample()
-        {
-
-        }
-
-
-
-        public void AddCertifiedValueSample()
-        {
-
-        }
-
-
-
-        public void AddSample()
-        {
-
+                throw new ArgumentNullException("The sample is null\n");
         }
 
 
 
         /* Private Methods */
 
-        private Element CreateElement(String line)
+
+
+        private void AddSample(Sample sample)
+        {
+            if (sample == null)
+                throw new ArgumentNullException("The sample being added to the List<T> Samples is null\n");
+
+            this.Samples.Add(sample);
+        }
+
+
+
+        private void AddCalibrationsSample(Sample sample)
+        {
+            if (sample == null)
+                throw new ArgumentNullException("The sample being added to the List<T> CalibrationSamples is null\n");
+
+            this.CalibrationSamples.Add(sample);
+        }
+
+
+
+        private void AddCalibrationsStandard(Sample sample)
+        {
+            if (sample == null)
+                throw new ArgumentNullException("The sample being added to the List<T> CalibrationsStandards is null\n");
+
+            this.CalibrationsStandards.Add(sample);
+        }
+
+
+
+        private void AddQualityControlSample(Sample sample)
+        {
+            if (sample != null)
+                throw new ArgumentNullException("The sample being added to the List<T> QualityControlSamples is null\n");
+
+            this.QualityControlSamples.Add(sample);
+        }
+
+
+
+        private void AddCertifiedValueSample(Sample sample)
+        {
+            if (sample != null)
+                throw new ArgumentNullException("The sample being added to the List<T> CertifiedValueSamples is null\n");
+
+            this.CertifiedValueSamples.Add(sample);
+        }
+
+
+
+        private void PassSampleGroupsToDataLoader()
+        {
+            this.Loader.AddSampleGroup(new SampleGroup(this.Samples));
+            this.Loader.AddCalibrationSampleGroup(new SampleGroup(this.CalibrationSamples));
+            this.Loader.AddCalibrationStandard(new SampleGroup(this.CalibrationsStandards));
+            this.Loader.AddQualityControlSampleGroup(new SampleGroup(this.QualityControlSamples));
+            this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(this.CertifiedValueSamples));
+        }
+
+
+
+        private Element CreateElement (String line)
         {
             // TODO
             return null;
@@ -121,16 +153,14 @@ namespace WaterAnalysisTool.Loader
 
         private void ParseHeader ()
         {
-            Sample samp;
+            Sample sample;
 
             if (this.Input.Peek() >= 0)
             {
-
                 String line = this.Input.ReadLine();
 
                 if (String.Compare(line, "[Sample Header]") == 0)
                 {
-
                     List<String> stringList = new List<String>();
 
                     while (this.Input.Peek() >= 0)
@@ -138,22 +168,29 @@ namespace WaterAnalysisTool.Loader
                         stringList.Add(this.Input.ReadLine());
                     }
 
-                    samp = this.CreateSample(stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // At this point I'm including the Comment member variable (Sample) whether it is blank in the input file or not
-                    // Add samp to corresponding sample list
-                }                                                                                                                    // If she doesn't want any blank comments in the .xlsx file I will change it. I just figured this way was easier
+                    sample = this.CreateSample(stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // At this point I'm including the Comment member variable (Sample) whether it is blank in the input file or not
+                                                                                                                                       // If she doesn't want any blank comments in the .xlsx file I will change it. I just figured this way was easier
+
+                    // this.ParseResults(sample);
+
+                    switch (sample) // Probably need getter for sampleType
+                    {
+                        // Add sample to the correct sample list depending on sampleType
+                    }
+                }
             }
         }
 
 
 
-        private void ParseResults (String line)
+        private void ParseResults (Sample sample)
         {
 
         }
 
 
 
-        private void ParseInternalStandards (String line)
+        private void ParseInternalStandards ()
         {
 
         }
