@@ -202,27 +202,28 @@ namespace WaterAnalysisTool.Loader
                     // Do QA/QC formatting to analyt concentrations
                     if(type == "Samples")
                     {
-                        // REQ-S3R2
-                        if (e.Average > this.CalibrationSamples.LOD[count])
-                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.Firebrick);
+                        // TODO Check if any of the calculated values DNE or something
 
-                        // REQ-S3R3
-                        else if (e.Average < this.CalibrationSamples.LOQ[count] && e.Average > this.CalibrationSamples.LOD[count])
-                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.Orange);
+                        // REQ-S3R7, lowest in heirarchy
+                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.Green);
 
-                        // REQ-S3R4
+                        // REQ-S3R4, 3rd in heirarchy
                         foreach (SampleGroup g in this.CertifiedValueSamples)
                             if (g.Average[count] < e.Average + 0.5 && g.Average[count] > e.Average - 0.5)
                                 if (g.Recovery[count] > 110 || g.Recovery[count] < 90)
                                     dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.DodgerBlue);
-                    
-                        // REQ-S3R6
 
-                    }
+                        // REQ-S3R2, 1st in heirarchy
+                        if (e.Average > this.CalibrationSamples.LOD[count])
+                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.Firebrick);
 
-                    else if(type == "CalibrationSamples")
-                    {
-                        // REQ-S3R5
+                        // REQ-S3R3, 2nd in heirarchy
+                        else if (e.Average < this.CalibrationSamples.LOQ[count] && e.Average > this.CalibrationSamples.LOD[count])
+                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.Orange);
+
+                        // REQ-S3R5, 4th in heirarchy
+                        else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
+                            dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Firebrick);
                     }
 
                     // Write RSD

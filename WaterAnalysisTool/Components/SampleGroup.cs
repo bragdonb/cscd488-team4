@@ -7,7 +7,7 @@ namespace WaterAnalysisTool.Components
     {
         /* Attributes */
         private String name;
-        private List<Sample> samples;
+        private List<Sample> samples; 
         private List<Double> average;
         private List<Double> lod;
         private List<Double> loq;
