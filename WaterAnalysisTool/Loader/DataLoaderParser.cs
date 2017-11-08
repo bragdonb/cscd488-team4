@@ -13,11 +13,12 @@ namespace WaterAnalysisTool.Loader
 
         private DataLoader Loader;
         private StreamReader Input;
-        private List<Sample> CalibrationSamples;        // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
+        private List<Sample> CalibrationSamples;        // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC - These will not always have the same number of elements(analytes) in the input text file
         private List<Sample> CalibrationsStandards;     // Calibration Standard -> Sample Type: Cal
         private List<Sample> QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC
-        private List<Sample> CertifiedValueSamples;     // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC
+        private List<Sample> CertifiedValueSamples;     // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC - These will not always have the same number of elements(analytes) in the input text file
         private List<Sample> Samples;
+        private List<SampleGroup> CertifiedValueSampleGroups; // The names of the different groupings of Certified Values can be anything and there can be any number of different names
 
 
 
@@ -32,6 +33,7 @@ namespace WaterAnalysisTool.Loader
             this.QualityControlSamples = new List<Sample>();
             this.CertifiedValueSamples = new List<Sample>();
             this.Samples = new List<Sample>();
+            this.CertifiedValueSampleGroups = new List<SampleGroup>();
         }
 
 
@@ -58,6 +60,11 @@ namespace WaterAnalysisTool.Loader
 
 
         /* Private Methods */
+
+        private void CreateCertifiedValueLists ()
+        {
+            // Read Certified Value names from a separate file and create SampleGroups (TMDW, Soil B, CCV (Continuous Calibration Verification)) to be added to the List<SampleGroup> CertifiedValueSampleGroups
+        }
 
 
 
@@ -167,7 +174,11 @@ namespace WaterAnalysisTool.Loader
                     }
 
                     sample = this.CreateSample(stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // At this point I'm including the Comment member variable (Sample) whether it is blank in the input file or not
-                                                                                                                                       // If she doesn't want any blank comments in the .xlsx file I will change it. I just figured this way was easier
+
+                    // Add sample to correct list here
+                    // Before adding:
+                        // 1. Check the sampleType
+                        // 2. If the sampleType is CertifiedValueSample or Sample check the name of the sample and add to the correct SampleGroup
 
                     // this.ParseResults(sample);
 

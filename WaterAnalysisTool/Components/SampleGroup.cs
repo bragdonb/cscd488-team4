@@ -7,7 +7,7 @@ namespace WaterAnalysisTool.Components
     {
         /* Attributes */
         private String name;
-        private List<Sample> samples; 
+        private List<Sample> samples;//first row contains data from Check Standards file
         private List<Double> average;
         private List<Double> lod;
         private List<Double> loq;
@@ -16,45 +16,21 @@ namespace WaterAnalysisTool.Components
         private List<Double> recovery;
         
         #region Properties
-        public String Name
-        {
-            get { return this.name; }
-        }
+        public String Name { get {return this.name;} }
 
-        public List<Double> Average
-        {
-            get { return this.average; }
-        }
+        public List<Double> Average { get { return this.average; } }
 
-        public List<Double> LOQ
-        {
-            get { return this.loq; }
-        }
+        public List<Double> LOQ { get { return this.loq; } }
 
-        public List<Double> LOD
-        {
-            get { return this.lod; }
-        }
+        public List<Double> LOD { get { return this.lod; } }
 
-        public List<Double> PercentDifference
-        {
-            get { return this.percentDifference; }
-        }
+        public List<Double> PercentDifference { get { return this.percentDifference; } }
 
-        public List<Double> RSD
-        {
-            get { return this.rsd; }
-        }
+        public List<Double> RSD { get { return this.rsd; } }
 
-        public List<Double> Recovery
-        {
-            get { return this.recovery; }
-        }
+        public List<Double> Recovery { get { return this.recovery; } }
 
-        public List<Sample> Samples 
-        {
-            get { return this.samples; }
-        }
+        public List<Sample> Samples { get { return this.samples; } }
         #endregion
 
         /* Constructors */
@@ -76,16 +52,21 @@ namespace WaterAnalysisTool.Components
             this.average = new List<Double>();
 
             int count = 0, index = 0;
+            bool firstRow = true;
 
-            foreach(Sample s in this.samples)
+            foreach(Sample s in this.samples)//start at row + 1
             {
                 count++;
                 index = 0;
-                foreach(Element e in s.Elements)
+                if (!firstRow)
                 {
-                    this.average[index] += e.Average;
-                    index++;
+                    foreach (Element e in s.Elements)
+                    {
+                        this.average[index] += e.Average;
+                        index++;
+                    }
                 }
+                firstRow = false;
             }
 
             for(index = 0; index < this.average.Count; index++)
@@ -101,16 +82,22 @@ namespace WaterAnalysisTool.Components
             this.rsd = new List<Double>();
             
             int count = 0, index = 0;
+            bool firstRow = true;
 
-            foreach (Sample s in this.samples)
+            foreach (Sample s in this.samples) // start at row + 1
             {
                 count++;
                 index = 0;
-                foreach (Element e in s.Elements)
+
+                if (!firstRow)
                 {
-                    this.lod[index] += Math.Pow((e.Average - this.average[index]), 2);
-                    index++;
+                    foreach (Element e in s.Elements)
+                    {
+                        this.lod[index] += Math.Pow((e.Average - this.average[index]), 2);
+                        index++;
+                    }
                 }
+                firstRow = false;
             }
 
             for (index = 0; index < this.average.Count; index++)
@@ -122,18 +109,31 @@ namespace WaterAnalysisTool.Components
 
         }//end CalculateLODandLOQandRSD()
 
-        private void CalculatePercentDifference()
+        private void CalculatePercentDifference() // %difference = (mean - certified value) / certified value * 100
         {
             this.percentDifference = new List<Double>();
-            //TODO Find out how to retrieve Stated Values, which are needed to calculate percent difference
-            
+
+            for (int x = 0; x < this.average.Count; x++)
+            {
+                if (this.samples[0].Elements[x].Average == -1)
+                    this.percentDifference[x] = -1;
+                else
+                    this.percentDifference[x] = (this.average[x] - this.samples[0].Elements[x].Average) / this.samples[0].Elements[x].Average * 100;
+            }
+
         }//end CalculatePercentDifference()
 
-        private void CalculateRecovery()
+        private void CalculateRecovery() // %recovery = mean / certified value * 100
         {
             this.recovery = new List<Double>();
-            //TODO Find out how to retrieve Stated Values, which are needed to calculate recovery(%)
 
+            for (int x = 0; x < this.average.Count; x++)
+            {
+                if (this.samples[0].Elements[x].Average == -1)
+                    this.recovery[x] = -1;
+                else
+                    this.recovery[x] = this.average[x] / this.samples[0].Elements[x].Average * 100;
+            }
         }//CalculateRecovery()
 
     }
