@@ -41,7 +41,6 @@ namespace WaterAnalysisTool.Loader
             // 2. Write Calibration Sample data into the Calibration Standards Worksheet
             // Load expects the package to have all required worksheets
 
-            // TODO error checking
             #region Error Checking
             if (this.Output.Workbook == null)
                 throw new ArgumentNullException("Workbook is null.\n");
@@ -261,8 +260,6 @@ namespace WaterAnalysisTool.Loader
             // TODO QA/QC Formatting for unique calculated rows
             switch (type)
             {
-                // TODO unique row formatting
-
                 case "CalibrationSamples":
                     row++;
                     dataws.Cells[row, 1].Value = "average";
@@ -300,7 +297,7 @@ namespace WaterAnalysisTool.Loader
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     for (col = 3; col <= count + 2; col++)
-                        dataws.Cells[row, col].Formula = "(" + dataws.Cells[rowEnd + 1, col].Address + "-" + dataws.Cells[rowStart - 1, col].Address + ")/" + dataws.Cells[rowStart - 1, col].Address + "*100"; // TODO There are extra numbers in the same row as the title "Stated Values"... They are used in this calc
+                        dataws.Cells[row, col].Formula = "(" + dataws.Cells[rowEnd + 1, col].Address + "-" + dataws.Cells[rowStart - 1, col].Address + ")/" + dataws.Cells[rowStart - 1, col].Address + "*100";
 
                     break;
 
