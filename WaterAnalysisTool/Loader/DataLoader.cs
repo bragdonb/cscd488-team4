@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Drawing.Color;
+using System.Drawing;
 using System.IO;
 using System.Collections.Generic;
 using OfficeOpenXml;
@@ -151,11 +151,11 @@ namespace WaterAnalysisTool.Loader
         #endregion
 
         /* Private Methods */
-        // TODO this needs to be rewritten to handle SampleGroups as an input; gives access to calculations already performed
         private int WriteSamples(ExcelWorksheet dataws, SampleGroup samples, String type, int row)
         {
             int count = 0;
             int rowStart, rowEnd, col;
+            bool flag = false;
 
             // Write header sample name
             switch (type)
@@ -199,32 +199,52 @@ namespace WaterAnalysisTool.Loader
                     // Write Analyte concentrations
                     dataws.Cells[row, col + 1].Value = e.Average;
 
-                    // Do QA/QC formatting to analyt concentrations
+                    // Do QA/QC formatting to analyte concentrations
+                    #region QA/AC Formatting
                     if(type == "Samples")
                     {
                         // TODO Check if any of the calculated values DNE or something
 
                         // REQ-S3R7, lowest in heirarchy
-                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.Green);
-
-                        // REQ-S3R4, 3rd in heirarchy
-                        foreach (SampleGroup g in this.CertifiedValueSamples)
-                            if (g.Average[count] < e.Average + 0.5 && g.Average[count] > e.Average - 0.5)
-                                if (g.Recovery[count] > 110 || g.Recovery[count] < 90)
-                                    dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.DodgerBlue);
+                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Green);
 
                         // REQ-S3R2, 1st in heirarchy
                         if (e.Average > this.CalibrationSamples.LOD[count])
-                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.Firebrick);
+                        {
+                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Firebrick);
+                            flag = true;
+                        }
 
                         // REQ-S3R3, 2nd in heirarchy
                         else if (e.Average < this.CalibrationSamples.LOQ[count] && e.Average > this.CalibrationSamples.LOD[count])
-                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(System.Drawing.Color.Orange);
+                        {
+                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Orange);
+                            flag = true;
+                        }
+
+                        // REQ-S3R4, 3rd in heirarchy
+                        else if (!flag)
+                        {
+                            foreach (SampleGroup g in this.CertifiedValueSamples)
+                                if (g.Average[count] < e.Average + 0.5 && g.Average[count] > e.Average - 0.5)
+                                    if (g.Recovery[count] > 110 || g.Recovery[count] < 90)
+                                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.DodgerBlue);
+                        }
 
                         // REQ-S3R5, 4th in heirarchy
                         else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
+                        {
                             dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Firebrick);
+                            flag = true;
+                        }
+
+                        // REQ-S3R6, 5th in heirarchy
+                        else if(!flag)
+                        {
+                            // TODO color any analyte that has a higher concentration than the highest corresponding cal. standard purple (BlueViolet)
+                        }
                     }
+                    #endregion
 
                     // Write RSD
                     dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
@@ -238,8 +258,11 @@ namespace WaterAnalysisTool.Loader
             rowEnd = row - 1;
 
             #region Write Unique Rows
+            // TODO QA/QC Formatting for unique calculated rows
             switch (type)
             {
+                // TODO unique row formatting
+
                 case "CalibrationSamples":
                     row++;
                     dataws.Cells[row, 1].Value = "average";
