@@ -9,7 +9,14 @@ namespace WaterAnalysisTool
     {
         static void Main(string[] args)
         {
-        
+            // The functionality of main:
+            // 1. Awaits input in from user
+            //  1.1. Accepts a command to parse the ICP-AES file (parse <location/name of input> <location/name for output>)
+            //      1.1.1. Create a new ExcelPackage
+            //      1.1.2. Create each necessary worksheet in the package (Data, Calibration Standards, Graphs)
+            //      1.1.3. Set the title in the packages properties to the name of the output file (sans the extension)
+            //      1.1.4. Create a new DataLoader and call its load function
+            //  1.2. Accepts a command to create correlation matrices (analyze <location/name of input> <r^2 threshold>)
         }
 
         /* EPPlus Example. Find documentation at: http://www.nudoq.org/#!/Packages/EPPlus/EPPlus/OfficeOpenXml

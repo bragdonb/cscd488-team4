@@ -52,7 +52,7 @@ namespace WaterAnalysisTool.Loader
             DataLoaderParser parser = new DataLoaderParser(this, Input);
             parser.Parse();
 
-            var dataws = Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
+            var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
             // Write header info
             Sample headerSample = Samples[Samples.Count - 1].Samples[Samples[Samples.Count - 1].Samples.Count - 1]; // good God
@@ -81,6 +81,9 @@ namespace WaterAnalysisTool.Loader
                 col++;
             }
 
+            // Freeze top 6 rows and left 2 columns
+            dataws.View.FreezePanes(7, 3); // row, col: represents the first row/col that is not frozen
+
             // Write samples
             int row = 7; // Start at row 7, col 1
 
@@ -103,8 +106,11 @@ namespace WaterAnalysisTool.Loader
             }
 
             // Write calibration standards
-            var calibws = Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
+            var calibws = this.Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
             WriteStandards(calibws, CalibrationStandards);
+
+            // SAVE IT
+            this.Output.Save();
         } // end Load
 
         #region Add<Sample>
@@ -155,25 +161,59 @@ namespace WaterAnalysisTool.Loader
             int count = 0;
             int rowStart, rowEnd, col;
             bool flag = false;
+            Sample known;
 
-            // Write header sample name
+            // Write sample name header
             switch (type)
             {
                 case "CalibrationSamples":
                     dataws.Cells[row, 1].Value = "Quality Control Solutions";
+                    dataws.Cells[row, 1].Style.Font.Bold = true;
                     break;
 
                 case "QualityControlSamples":
                     dataws.Cells[row, 1].Value = "Stated Values";
-                    // TODO write the first sample in this row (comes from second file)
+                    dataws.Cells[row, 1].Style.Font.Bold = true;
+
+                    known = samples.Samples[0];
+                    col = 3;
+
+                    foreach(Element e in known.Elements)
+                    {
+                        if (e.Average != -1) // assumes parser set average in elements with no data to -1
+                        {
+                            dataws.Cells[row, col].Value = e.Average;
+                            dataws.Cells[row, col].Style.Font.Bold = true;
+                        }
+
+                        col++;
+                    }
+
                     break;
 
                 case "CertifiedValuesSamples":
-                    // TODO write the first sample in this row (comes from second file)
+                    dataws.Cells[row, 1].Value = "Certified Values";
+                    dataws.Cells[row, 1].Style.Font.Bold = true;
+
+                    known = samples.Samples[0];
+                    col = 3;
+
+                    foreach (Element e in known.Elements)
+                    {
+                        if (e.Average != -1) // assumes parse set average in elements with no data to -1
+                        {
+                            dataws.Cells[row, col].Value = e.Average;
+                            dataws.Cells[row, col].Style.Font.Bold = true;
+                        }
+
+                        col++;
+                    }
                     break;
 
                 default:
                     dataws.Cells[row, 1].Value = samples.Name;
+                    dataws.Cells[row, 1].Style.Font.Bold = true;
+
                     break;
             }
 
@@ -188,76 +228,90 @@ namespace WaterAnalysisTool.Loader
                 col = 1;
                 count = 0;
 
-                dataws.Cells[row, col].Value = s.Name;
-                dataws.Cells[row, ++col].Value = s.RunTime.Split(' ')[1];
-
-                foreach (Element e in s.Elements)
+                if (type != "QualityControlSamples" && type != "CertifiedValueSamples" && s != samples.Samples[0]) // skip the first sample in these types because the first sample is known values and already written
                 {
-                    count++;
+                    dataws.Cells[row, col].Value = s.Name;
+                    dataws.Cells[row, ++col].Value = s.RunTime.Split(' ')[1];
 
-                    // Write Analyte concentrations
-                    dataws.Cells[row, col + 1].Value = e.Average;
-
-                    // Do QA/QC formatting to analyte concentrations
-                    #region QA/AC Formatting
-                    if(type == "Samples")
+                    foreach (Element e in s.Elements)
                     {
-                        // TODO Check if any of the calculated values DNE or something
+                        count++;
 
-                        // REQ-S3R7, lowest in heirarchy
-                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Green);
-
-                        // REQ-S3R2, 1st in heirarchy
-                        if (e.Average > this.CalibrationSamples.LOD[count])
+                        if (e.Average != -1) // won't bother with cells where data does not exist (assumes parser set average in elements with no data to -1)
                         {
-                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Firebrick);
-                            flag = true;
+                            // Write Analyte concentrations
+                            dataws.Cells[row, col + 1].Value = e.Average;
+
+                            // Write RSD
+                            dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
+
+                            // Do QA/QC formatting to analyte concentrations
+                            #region QA/AC Formatting
+                            if (type == "Samples")
+                            {
+
+                                // REQ-S3R7, lowest in heirarchy
+                                dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Green);
+
+                                // REQ-S3R2, 1st in heirarchy
+                                if (e.Average > this.CalibrationSamples.LOD[count])
+                                {
+                                    dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Firebrick);
+                                    flag = true;
+                                }
+
+                                // REQ-S3R3, 2nd in heirarchy
+                                else if (e.Average < this.CalibrationSamples.LOQ[count] && e.Average > this.CalibrationSamples.LOD[count])
+                                {
+                                    dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Orange);
+                                    flag = true;
+                                }
+
+                                // REQ-S3R4, 3rd in heirarchy
+                                else if (!flag)
+                                {
+                                    foreach (SampleGroup g in this.CertifiedValueSamples)
+                                        if (g.Average[count] < e.Average + 0.5 && g.Average[count] > e.Average - 0.5)
+                                            if (g.Recovery[count] > 110 || g.Recovery[count] < 90)
+                                                dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.DodgerBlue);
+                                }
+
+                                // REQ-S3R5, 4th in heirarchy
+                                else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
+                                {
+                                    dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Black);
+                                    dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Firebrick);
+                                    flag = true;
+                                }
+
+                                // REQ-S3R6, 5th in heirarchy
+                                else if (!flag)
+                                {
+                                    Double highest = 0.0;
+
+                                    foreach (Sample std in this.CalibrationStandards.Samples)
+                                    {
+                                        if (std.Elements[count].Average > highest)
+                                            highest = std.Elements[count].Average;
+                                    }
+
+                                    if (e.Average > highest)
+                                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.BlueViolet);
+                                }
+                            }
+                            #endregion
                         }
 
-                        // REQ-S3R3, 2nd in heirarchy
-                        else if (e.Average < this.CalibrationSamples.LOQ[count] && e.Average > this.CalibrationSamples.LOD[count])
-                        {
-                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Orange);
-                            flag = true;
-                        }
-
-                        // REQ-S3R4, 3rd in heirarchy
-                        else if (!flag)
-                        {
-                            foreach (SampleGroup g in this.CertifiedValueSamples)
-                                if (g.Average[count] < e.Average + 0.5 && g.Average[count] > e.Average - 0.5)
-                                    if (g.Recovery[count] > 110 || g.Recovery[count] < 90)
-                                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.DodgerBlue);
-                        }
-
-                        // REQ-S3R5, 4th in heirarchy
-                        else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
-                        {
-                            dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Firebrick);
-                            flag = true;
-                        }
-
-                        // REQ-S3R6, 5th in heirarchy
-                        else if(!flag)
-                        {
-                            // TODO color any analyte that has a higher concentration than the highest corresponding cal. standard purple (BlueViolet)
-                        }
+                        col++;
                     }
-                    #endregion
-
-                    // Write RSD
-                    dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
-
-                    col++;
                 }
-
                 row++;
             }
 
             rowEnd = row - 1;
 
             #region Write Unique Rows
-            // TODO QA/QC Formatting for unique calculated rows
+            // TODO determine if we want to write formulas for elements that weren't measure for (have no data, see examples where there are formula errors)
             switch (type)
             {
                 case "CalibrationSamples":
@@ -314,14 +368,24 @@ namespace WaterAnalysisTool.Loader
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     for (col = 3; col <= count + 2; col++)
+                    {
                         dataws.Cells[row, col].Formula = "STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")/" + dataws.Cells[rowEnd + 1, col].Address + "*100";
+
+                        if (samples.RSD[col - 4] > 10)
+                            dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick);
+                    }
 
                     row++;
                     dataws.Cells[row, 1].Value = "recovery (%)";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     for (col = 3; col <= count; col++)
-                        dataws.Cells[row, col].Formula = dataws.Cells[rowEnd + 1, col].Address + "/" + dataws.Cells[rowStart - 1, col].Address + "*100"; // TODO There are extra numbers in the same row as the title "Certified Values"... They are used in this calc
+                    {
+                        dataws.Cells[row, col].Formula = dataws.Cells[rowEnd + 1, col].Address + "/" + dataws.Cells[rowStart - 1, col].Address + "*100";
+
+                        if (samples.Recovery[col - 4] < 90 || samples.Recovery[col - 4] > 110)
+                            dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick); 
+                    }
 
                     break;
 
