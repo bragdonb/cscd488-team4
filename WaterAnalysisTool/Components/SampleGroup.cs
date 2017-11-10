@@ -7,6 +7,7 @@ namespace WaterAnalysisTool.Components
     {
         /* Attributes */
         private String name;
+        private bool skipFirst;
         private List<Sample> samples;//first row contains data from Check Standards file
         private List<Double> average;
         private List<Double> lod;
@@ -34,14 +35,17 @@ namespace WaterAnalysisTool.Components
         #endregion
 
         /* Constructors */
-        public SampleGroup(List<Sample> sampleList, String name)
+        public SampleGroup(List<Sample> sampleList, String name, bool skipFirst)
         {
             this.name = name;
-            this.samples = sampleList;
+            this.skipFirst = skipFirst;
+            this.samples = new List<Sample>();
+
+            foreach(Sample s in sampleList) // deeeeeep copy yo
+                samples.Add(s);
+
             CalculateAverage();
             CalculateLODandLOQandRSD();
-
-            //not finished
             CalculatePercentDifference();
             CalculateRecovery();
         }
@@ -52,12 +56,20 @@ namespace WaterAnalysisTool.Components
             this.average = new List<Double>();
 
             int count = 0, index = 0;
-            bool firstRow = true;
 
-            foreach(Sample s in this.samples)//start at row + 1
+            foreach (Element e in this.Samples[0].Elements) // do some initialization
+                this.average.Add(0.0);
+
+            bool firstRow = false;
+
+            if (skipFirst)
+                firstRow = true;
+
+            foreach (Sample s in this.samples)
             {
                 count++;
                 index = 0;
+
                 if (!firstRow)
                 {
                     foreach (Element e in s.Elements)
@@ -66,6 +78,7 @@ namespace WaterAnalysisTool.Components
                         index++;
                     }
                 }
+
                 firstRow = false;
             }
 
@@ -82,12 +95,22 @@ namespace WaterAnalysisTool.Components
             this.rsd = new List<Double>();
             
             int count = 0, index = 0;
-            bool firstRow = true;
+            bool firstRow = false;
+
+            if (skipFirst)
+                firstRow = true;
 
             foreach (Sample s in this.samples) // start at row + 1
             {
                 count++;
                 index = 0;
+
+                foreach (Element e in s.Elements)
+                {
+                    this.lod.Add(0.0);
+                    this.loq.Add(0.0);
+                    this.rsd.Add(0.0);
+                }
 
                 if (!firstRow)
                 {
@@ -97,6 +120,7 @@ namespace WaterAnalysisTool.Components
                         index++;
                     }
                 }
+
                 firstRow = false;
             }
 
@@ -115,6 +139,8 @@ namespace WaterAnalysisTool.Components
 
             for (int x = 0; x < this.average.Count; x++)
             {
+                this.percentDifference.Add(0.0);
+
                 if (this.samples[0].Elements[x].Average == -1)
                     this.percentDifference[x] = -1;
                 else
@@ -129,6 +155,8 @@ namespace WaterAnalysisTool.Components
 
             for (int x = 0; x < this.average.Count; x++)
             {
+                this.recovery.Add(0.0);
+
                 if (this.samples[0].Elements[x].Average == -1)
                     this.recovery[x] = -1;
                 else

@@ -1,5 +1,7 @@
 ﻿using OfficeOpenXml; // This is the top namespace for EPPlus, if your reference isn't found use the command -> Update-Package -reinstall in the NuGet Console
+using System;
 using System.IO;
+using System.Collections.Generic;
 using WaterAnalysisTool.Loader;
 using WaterAnalysisTool.Components;
 
@@ -7,6 +9,7 @@ namespace WaterAnalysisTool
 {
     class Program
     {
+        /* The real main
         static void Main(string[] args)
         {
             // The functionality of main:
@@ -18,6 +21,7 @@ namespace WaterAnalysisTool
             //      1.1.4. Create a new DataLoader and call its load function
             //  1.2. Accepts a command to create correlation matrices (analyze <location/name of input> <r^2 threshold>)
         }
+        */
 
         /* EPPlus Example. Find documentation at: http://www.nudoq.org/#!/Packages/EPPlus/EPPlus/OfficeOpenXml
         static void Main(string[] args)
@@ -52,68 +56,140 @@ namespace WaterAnalysisTool
             }
         }
         */
-        /* DataLoader Load() Tester
+        /* DataLoader Load() Tester */
         static void Main(string[] args)
         {
+            SampleGroup CalibrationSamples;
+            SampleGroup CalibrationStandards;
+            SampleGroup QualityControlSamples;
+            SampleGroup CertifiedValueSamples_1;
+            SampleGroup CertifiedValueSamples_2;
+            SampleGroup Samples_1;
+            SampleGroup Samples_2;
+
+            Sample s = null;
+            List<Sample> list = new List<Sample>();
+
+            Random random = new Random();
+
             FileInfo fi = new FileInfo(@"tester.xlsx");
             if (fi.Exists)
                 fi.Delete();
 
             using (var p = new ExcelPackage(new FileInfo(@"tester.xlsx")))
-            {
+            {     
                 p.Workbook.Properties.Title = "Title of Workbook";
-                var ws = p.Workbook.Worksheets.Add("Data");
+                p.Workbook.Worksheets.Add("Data");
                 p.Workbook.Worksheets.Add("Calibration Standards");
+                p.Workbook.Worksheets.Add("Graphs");
 
 
                 DataLoader loader = new DataLoader(null, p);
-                Sample generic = new Sample("Method Name", "Generic Sample", "10/28/20117 12:00:00", "Sample Type", 3);
-                generic.AddElement(new Element("Element 1", "Units", 1.0, 0.0, 1.0));
-                generic.AddElement(new Element("Element 2", "Units", 1.0, 0.0, 1.0));
-                generic.AddElement(new Element("Element 3", "Units", 1.0, 0.0, 1.0));
-                generic.AddElement(new Element("Element 4", "Units", 1.0, 0.0, 1.0));
-                generic.AddElement(new Element("Element 5", "Units", 1.0, 0.0, 1.0));
-                generic.AddElement(new Element("Element 6", "Units", 1.0, 0.0, 1.0));
-                generic.AddElement(new Element("Element 7", "Units", 1.0, 0.0, 1.0));
-                generic.AddElement(new Element("Element 8", "Units", 1.0, 0.0, 1.0));
-                generic.AddElement(new Element("Element 9", "Units", 1.0, 0.0, 1.0));
-                generic.AddElement(new Element("Element 10", "Units", 1.0, 0.0, 1.0));
-                loader.AddSample(generic);
 
-                Sample calib1 = new Sample("Method Name", "Instrument Blank", "10/28/20117 12:00:00", "Sample Type", 3);
-                calib1.AddElement(new Element("Element 1", "Units", 1.0, 1.0, 1.0));
-                calib1.AddElement(new Element("Element 2", "Units", 2.0, 2.0, 1.0));
-                calib1.AddElement(new Element("Element 3", "Units", 3.0, 3.0, 1.0));
-                calib1.AddElement(new Element("Element 4", "Units", 4.0, 4.0, 1.0));
-                calib1.AddElement(new Element("Element 5", "Units", 5.0, 5.0, 1.0));
-                calib1.AddElement(new Element("Element 6", "Units", 6.0, 6.0, 1.0));
-                calib1.AddElement(new Element("Element 7", "Units", 7.0, 7.0, 1.0));
-                calib1.AddElement(new Element("Element 8", "Units", 8.0, 8.0, 1.0));
-                calib1.AddElement(new Element("Element 9", "Units", 9.0, 9.0, 1.0));
-                calib1.AddElement(new Element("Element 10", "Units", 10.0, 10.0, 1.0));
-                loader.AddCalibrationSample(calib1);
+                #region Sample & Sample Group Creation
+                for(int i = 0; i < 10; i++)
+                {
+                    s = new Sample("Method Name", "Calibration Sample #" + i, DateTime.Now.ToString(), "QC", 3);
 
-                Sample calib2 = new Sample("Method Name", "Instrument Blank", "10/28/20117 12:00:00", "Sample Type", 3);
-                calib2.AddElement(new Element("Element 1", "Units", 1.0, 1.0, 1.0));
-                calib2.AddElement(new Element("Element 2", "Units", 2.0, 2.0, 1.0));
-                calib2.AddElement(new Element("Element 3", "Units", 3.0, 3.0, 1.0));
-                calib2.AddElement(new Element("Element 4", "Units", 4.0, 4.0, 1.0));
-                calib2.AddElement(new Element("Element 5", "Units", 5.0, 5.0, 1.0));
-                calib2.AddElement(new Element("Element 6", "Units", 6.0, 6.0, 1.0));
-                calib2.AddElement(new Element("Element 7", "Units", 7.0, 7.0, 1.0));
-                calib2.AddElement(new Element("Element 8", "Units", 8.0, 8.0, 1.0));
-                calib2.AddElement(new Element("Element 9", "Units", 9.0, 9.0, 1.0));
-                calib2.AddElement(new Element("Element 10", "Units", 10.0, 10.0, 1.0));
-                loader.AddCalibrationSample(calib2);
+                    for(int j = 0; j < 10; j++)
+                        s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
 
-                loader.Load(); // Load calls Parse, don't need to in main
+                    list.Add(s);
+                }
 
-                //System.Console.WriteLine(ws.Cells[1, 5].Address);
-                //System.Console.ReadLine();
+                CalibrationSamples = new SampleGroup(list, "CalibrationSamples", false);
+                list.Clear();
 
-                p.Save();
+                for (int i = 0; i < 10; i++)
+                {
+                    s = new Sample("Method Name", "Calibration Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                    for(int j = 0; j < 10; j++)
+                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                    list.Add(s);
+                }
+
+                CalibrationStandards = new SampleGroup(list, "CalibrationSamples", false);
+                list.Clear();
+
+                for (int i = 0; i < 10; i++)
+                {
+                    s = new Sample("Method Name", "Quality Control Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                    for (int j = 0; j < 10; j++)
+                        s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                    list.Add(s);
+
+                }
+
+                QualityControlSamples = new SampleGroup(list, "QualityControlSamples", true);
+                list.Clear();
+
+                for(int i = 0; i < 10; i++)
+                {
+                    s = new Sample("Method Name", "Certified Value (1) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                    for (int j = 0; j < 10; j++)
+                        s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                    list.Add(s);
+                }
+
+                CertifiedValueSamples_1 = new SampleGroup(list, "CertifiedValueSamples_1", true);
+                list.Clear();
+
+                for(int i = 0; i < 10; i++)
+                {
+                    s = new Sample("Method Name", "Certified Value (2) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                    for (int j = 0; j < 10; j++)
+                        s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                    list.Add(s);
+                }
+
+                CertifiedValueSamples_2 = new SampleGroup(list, "CertifiedValueSamples_2", true);
+                list.Clear();
+
+                for(int i = 0; i < 10; i++)
+                {
+                    s = new Sample("Method Name", "Generic (1) Sample #" + i, DateTime.Now.ToString(), "Unk", 3);
+
+                    for (int j = 0; j < 10; j++)
+                        s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                    list.Add(s);
+                }
+
+                Samples_1 = new SampleGroup(list, "Samples_1", false);
+                list.Clear();
+
+                for(int i = 0; i < 10; i++)
+                {
+                    s = new Sample("Method Name", "Generic (2) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                    for (int j = 0; j < 10; j++)
+                        s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                    list.Add(s);
+                }
+
+                Samples_2 = new SampleGroup(list, "Samples_2", false);
+                list.Clear();
+
+                loader.AddCalibrationSampleGroup(CalibrationSamples);
+                loader.AddCalibrationStandard(CalibrationStandards);
+                loader.AddQualityControlSampleGroup(QualityControlSamples);
+                loader.AddCertifiedValueSampleGroup(CertifiedValueSamples_1);
+                loader.AddCertifiedValueSampleGroup(CertifiedValueSamples_2);
+                loader.AddSampleGroup(Samples_1);
+                loader.AddSampleGroup(Samples_2);
+                #endregion
+
+                loader.Load(); // Load calls Parse, don't need to in main; also saves the workbook
             }
         }
-        */
     }
 }

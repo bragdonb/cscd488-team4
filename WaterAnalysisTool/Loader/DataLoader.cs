@@ -41,6 +41,7 @@ namespace WaterAnalysisTool.Loader
             // 2. Write Calibration Sample data into the Calibration Standards Worksheet
             // Load expects the package to have all required worksheets
 
+            // TODO checking if there are actually samples and stuff, more error checking
             #region Error Checking
             if (this.Output.Workbook == null)
                 throw new ArgumentNullException("Workbook is null.\n");
@@ -49,8 +50,8 @@ namespace WaterAnalysisTool.Loader
                 throw new ArgumentOutOfRangeException("Invalid number of worksheets present in workbook.\n");
             #endregion
 
-            DataLoaderParser parser = new DataLoaderParser(this, Input);
-            parser.Parse();
+            //DataLoaderParser parser = new DataLoaderParser(this, Input);
+            //parser.Parse();
 
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
@@ -168,12 +169,10 @@ namespace WaterAnalysisTool.Loader
             {
                 case "CalibrationSamples":
                     dataws.Cells[row, 1].Value = "Quality Control Solutions";
-                    dataws.Cells[row, 1].Style.Font.Bold = true;
                     break;
 
                 case "QualityControlSamples":
                     dataws.Cells[row, 1].Value = "Stated Values";
-                    dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     known = samples.Samples[0];
                     col = 3;
@@ -191,9 +190,8 @@ namespace WaterAnalysisTool.Loader
 
                     break;
 
-                case "CertifiedValuesSamples":
+                case "CertifiedValueSamples":
                     dataws.Cells[row, 1].Value = "Certified Values";
-                    dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     known = samples.Samples[0];
                     col = 3;
@@ -208,11 +206,11 @@ namespace WaterAnalysisTool.Loader
 
                         col++;
                     }
+
                     break;
 
                 default:
                     dataws.Cells[row, 1].Value = samples.Name;
-                    dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     break;
             }
@@ -228,7 +226,90 @@ namespace WaterAnalysisTool.Loader
                 col = 1;
                 count = 0;
 
-                if (type != "QualityControlSamples" && type != "CertifiedValueSamples" && s != samples.Samples[0]) // skip the first sample in these types because the first sample is known values and already written
+                if (type == "QualityControlSamples" || type == "CertifiedValueSamples") // skip the first sample in these types because the first sample is known values and already written; seems like this could be cleaned up
+                {
+                    if(s != samples.Samples[0])
+                    {
+                        dataws.Cells[row, col].Value = s.Name;
+                        dataws.Cells[row, ++col].Value = s.RunTime.Split(' ')[1];
+
+                        foreach (Element e in s.Elements)
+                        {
+                            count++;
+
+                            if (e.Average != -1) // won't bother with cells where data does not exist (assumes parser set average in elements with no data to -1)
+                            {
+                                // Write Analyte concentrations
+                                dataws.Cells[row, col + 1].Value = e.Average;
+
+                                // Write RSD
+                                dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
+
+                                // Do QA/QC formatting to analyte concentrations
+                                #region QA/AC Formatting
+                                if (type == "Samples")
+                                {
+
+                                    // REQ-S3R7, lowest in heirarchy
+                                    dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Green);
+
+                                    // REQ-S3R2, 1st in heirarchy
+                                    if (e.Average > this.CalibrationSamples.LOD[count])
+                                    {
+                                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Firebrick);
+                                        flag = true;
+                                    }
+
+                                    // REQ-S3R3, 2nd in heirarchy
+                                    else if (e.Average < this.CalibrationSamples.LOQ[count] && e.Average > this.CalibrationSamples.LOD[count])
+                                    {
+                                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Orange);
+                                        flag = true;
+                                    }
+
+                                    // REQ-S3R4, 3rd in heirarchy
+                                    else if (!flag)
+                                    {
+                                        foreach (SampleGroup g in this.CertifiedValueSamples)
+                                            if (g.Average[count] < e.Average + 0.5 && g.Average[count] > e.Average - 0.5)
+                                                if (g.Recovery[count] > 110 || g.Recovery[count] < 90)
+                                                    dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.DodgerBlue);
+                                    }
+
+                                    // REQ-S3R5, 4th in heirarchy
+                                    else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
+                                    {
+                                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Black);
+                                        dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Firebrick);
+                                        flag = true;
+                                    }
+
+                                    // REQ-S3R6, 5th in heirarchy
+                                    else if (!flag)
+                                    {
+                                        Double highest = 0.0;
+
+                                        foreach (Sample std in this.CalibrationStandards.Samples)
+                                        {
+                                            if (std.Elements[count].Average > highest)
+                                                highest = std.Elements[count].Average;
+                                        }
+
+                                        if (e.Average > highest)
+                                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.BlueViolet);
+                                    }
+                                }
+                                #endregion
+                            }
+
+                            col++;
+                        }
+
+                        row++;
+                    }
+                }
+
+                else
                 {
                     dataws.Cells[row, col].Value = s.Name;
                     dataws.Cells[row, ++col].Value = s.RunTime.Split(' ')[1];
@@ -280,6 +361,7 @@ namespace WaterAnalysisTool.Loader
                                 else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
                                 {
                                     dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Black);
+                                    dataws.Cells[row, col + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
                                     dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Firebrick);
                                     flag = true;
                                 }
@@ -304,8 +386,9 @@ namespace WaterAnalysisTool.Loader
 
                         col++;
                     }
+
+                    row++;
                 }
-                row++;
             }
 
             rowEnd = row - 1;
@@ -315,53 +398,68 @@ namespace WaterAnalysisTool.Loader
             switch (type)
             {
                 case "CalibrationSamples":
-                    row++;
                     dataws.Cells[row, 1].Value = "average";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     for (col = 3; col <= count + 2; col++)
+                    {
                         dataws.Cells[row, col].Formula = "AVERAGE(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
+                        dataws.Cells[row, col].Style.Font.Bold = true;
+                    }
 
                     row++;
                     dataws.Cells[row, 1].Value = "LOD";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     for (col = 3; col <= count + 2; col++)
+                    {
                         dataws.Cells[row, col].Formula = "3*STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
+                        dataws.Cells[row, col].Style.Font.Bold = true;
+                    }
 
                     row++;
                     dataws.Cells[row, 1].Value = "LOQ";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     for (col = 3; col <= count + 2; col++)
+                    {
                         dataws.Cells[row, col].Formula = "10*STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
+                        dataws.Cells[row, col].Style.Font.Bold = true;
+                    }
 
                     break;
 
                 case "QualityControlSamples":
-                    row++;
                     dataws.Cells[row, 1].Value = "average";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     for (col = 3; col <= count + 2; col++)
+                    {
                         dataws.Cells[row, col].Formula = "AVERAGE(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
+                        dataws.Cells[row, col].Style.Font.Bold = true;
+                    }
 
                     row++;
                     dataws.Cells[row, 1].Value = "% difference";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     for (col = 3; col <= count + 2; col++)
+                    {
                         dataws.Cells[row, col].Formula = "(" + dataws.Cells[rowEnd + 1, col].Address + "-" + dataws.Cells[rowStart - 1, col].Address + ")/" + dataws.Cells[rowStart - 1, col].Address + "*100";
+                        dataws.Cells[row, col].Style.Font.Bold = true;
+                    }
 
                     break;
 
                 case "CertifiedValueSamples":
-                    row++;
                     dataws.Cells[row, 1].Value = "average";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
                     for (col = 3; col <= count + 2; col++)
+                    {
                         dataws.Cells[row, col].Formula = "AVERAGE(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
+                        dataws.Cells[row, col].Style.Font.Bold = true;
+                    }
 
                     row++;
                     dataws.Cells[row, 1].Value = "rsd (%)";
@@ -370,8 +468,9 @@ namespace WaterAnalysisTool.Loader
                     for (col = 3; col <= count + 2; col++)
                     {
                         dataws.Cells[row, col].Formula = "STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")/" + dataws.Cells[rowEnd + 1, col].Address + "*100";
+                        dataws.Cells[row, col].Style.Font.Bold = true;
 
-                        if (samples.RSD[col - 4] > 10)
+                        if (samples.RSD[count - 1] > 10)
                             dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick);
                     }
 
@@ -379,11 +478,12 @@ namespace WaterAnalysisTool.Loader
                     dataws.Cells[row, 1].Value = "recovery (%)";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
-                    for (col = 3; col <= count; col++)
+                    for (col = 3; col <= count + 2; col++)
                     {
                         dataws.Cells[row, col].Formula = dataws.Cells[rowEnd + 1, col].Address + "/" + dataws.Cells[rowStart - 1, col].Address + "*100";
+                        dataws.Cells[row, col].Style.Font.Bold = true;
 
-                        if (samples.Recovery[col - 4] < 90 || samples.Recovery[col - 4] > 110)
+                        if (samples.Recovery[count - 1] < 90 || samples.Recovery[count - 1] > 110)
                             dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick); 
                     }
 
@@ -421,6 +521,8 @@ namespace WaterAnalysisTool.Loader
             col = 1;
             foreach (Sample s in standards.Samples)
             {
+                col = 1;
+
                 calibws.Cells[row, col].Value = s.Name;
                 calibws.Cells[row, ++col].Value = s.RunTime;
 
@@ -428,6 +530,8 @@ namespace WaterAnalysisTool.Loader
                 {
                     calibws.Cells[row, ++col].Value = e.Average;
                 }
+
+                row++;
             }
 
             // Create the calibration curve graph

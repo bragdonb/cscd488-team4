@@ -132,11 +132,11 @@ namespace WaterAnalysisTool.Loader
 
         private void PassSampleGroupsToDataLoader()
         {
-            this.Loader.AddSampleGroup(new SampleGroup(this.Samples));
-            this.Loader.AddCalibrationSampleGroup(new SampleGroup(this.CalibrationSamples));
-            this.Loader.AddCalibrationStandard(new SampleGroup(this.CalibrationsStandards));
-            this.Loader.AddQualityControlSampleGroup(new SampleGroup(this.QualityControlSamples));
-            this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(this.CertifiedValueSamples));
+            //this.Loader.AddSampleGroup(new SampleGroup(this.Samples));
+            //this.Loader.AddCalibrationSampleGroup(new SampleGroup(this.CalibrationSamples));
+            //this.Loader.AddCalibrationStandard(new SampleGroup(this.CalibrationsStandards));
+            //this.Loader.AddQualityControlSampleGroup(new SampleGroup(this.QualityControlSamples));
+            //this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(this.CertifiedValueSamples));
         }
 
 
