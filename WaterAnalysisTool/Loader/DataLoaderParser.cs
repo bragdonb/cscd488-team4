@@ -16,9 +16,10 @@ namespace WaterAnalysisTool.Loader
         private List<Sample> CalibrationSamples;        // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC - These will not always have the same number of elements(analytes) in the input text file
         private List<Sample> CalibrationsStandards;     // Calibration Standard -> Sample Type: Cal
         private List<Sample> QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC
-        private List<Sample> CertifiedValueSamples;     // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC - These will not always have the same number of elements(analytes) in the input text file
-        private List<Sample> Samples;
-        private List<SampleGroup> CertifiedValueSampleGroups; // The names of the different groupings of Certified Values can be anything and there can be any number of different names
+        
+        // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC - These will not always have the same number of elements(analytes) in the input text file
+        private List<SampleGroup> CertifiedValueSamples; // The names of the different groupings of Certified Values can be anything and there can be any number of different names
+        private List<SampleGroup> Samples;
 
 
 
@@ -31,9 +32,9 @@ namespace WaterAnalysisTool.Loader
             this.CalibrationSamples = new List<Sample>();
             this.CalibrationsStandards = new List<Sample>();
             this.QualityControlSamples = new List<Sample>();
-            this.CertifiedValueSamples = new List<Sample>();
-            this.Samples = new List<Sample>();
-            this.CertifiedValueSampleGroups = new List<SampleGroup>();
+
+            this.CertifiedValueSamples = new List<SampleGroup>();
+            this.Samples = new List<SampleGroup>();
         }
 
 
@@ -61,7 +62,7 @@ namespace WaterAnalysisTool.Loader
 
         /* Private Methods */
 
-        private void CreateCertifiedValueLists ()
+        private void CreateCertifiedValueLists () // May not need
         {
             // Read Certified Value names from a separate file and create SampleGroups (TMDW, Soil B, CCV (Continuous Calibration Verification)) to be added to the List<SampleGroup> CertifiedValueSampleGroups
         }
@@ -80,7 +81,7 @@ namespace WaterAnalysisTool.Loader
 
 
 
-        private void AddSample(Sample sample)
+        private void AddSample(SampleGroup sample)
         {
             if (sample == null)
                 throw new ArgumentNullException("The sample being added to the List<T> Samples is null\n");
@@ -120,7 +121,7 @@ namespace WaterAnalysisTool.Loader
 
 
 
-        private void AddCertifiedValueSample(Sample sample)
+        private void AddCertifiedValueSample(SampleGroup sample)
         {
             if (sample != null)
                 throw new ArgumentNullException("The sample being added to the List<T> CertifiedValueSamples is null\n");
@@ -132,11 +133,20 @@ namespace WaterAnalysisTool.Loader
 
         private void PassSampleGroupsToDataLoader()
         {
-            //this.Loader.AddSampleGroup(new SampleGroup(this.Samples));
-            //this.Loader.AddCalibrationSampleGroup(new SampleGroup(this.CalibrationSamples));
-            //this.Loader.AddCalibrationStandard(new SampleGroup(this.CalibrationsStandards));
-            //this.Loader.AddQualityControlSampleGroup(new SampleGroup(this.QualityControlSamples));
-            //this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(this.CertifiedValueSamples));
+            
+            for ()
+            {
+                // this.Loader.AddSampleGroup(new SampleGroup(this.Samples, NAME HERE));
+            }
+
+            // this.Loader.AddCalibrationSampleGroup(new SampleGroup(this.CalibrationSamples, NAME HERE));
+            // this.Loader.AddCalibrationStandard(new SampleGroup(this.CalibrationsStandards, NAME HERE));
+            // this.Loader.AddQualityControlSampleGroup(new SampleGroup(this.QualityControlSamples, NAME HERE));
+
+            for ()
+            {
+                // this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(this.CertifiedValueSamples, NAME HERE));
+            }
         }
 
 
