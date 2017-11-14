@@ -4,6 +4,7 @@ using System.IO;
 using System.Collections.Generic;
 using OfficeOpenXml;
 using WaterAnalysisTool.Components;
+using WaterAnalysisTool.Exceptions;
 
 namespace WaterAnalysisTool.Loader
 {
@@ -534,10 +535,41 @@ namespace WaterAnalysisTool.Loader
                 row++;
             }
 
-            // Create the calibration curve graph
-            // 1. Open the ICP-OESstandards-master list Excel sheet or some config sheet where the stock solution concentrations can be found
+            int chartRow = row + 2;
+
+            // TODO Create the calibration curve graph
+            // 1. Open the CheckStandards.xlsx sheet where the stock solution concentrations can be found and read them in
             //  1.1 Have to worry about not every concentration in the standards list, what about using the ratio in their name and multiplying by the known mg/L
             // 2. Create a graph with the measured counts per second in the standards list over their respective stock solution concentration
+            try
+            {
+                FileInfo fi = new FileInfo("CheckStandards.xlsx");
+                if (!fi.Exists)
+                    throw new FileNotFoundException("The CheckStandards.xlsx config file does not exist.");
+
+                using (var p = new ExcelPackage(fi))
+                {
+                    row = 4;
+                    col = 1;
+                    ExcelWorksheet standardsws = p.Workbook.Worksheets[2]; // TODO this index may change depending on if the CheckStandards.xlxs file changing
+
+                    if (standardsws.Cells[row, col].Value.ToString() != "Calibration Standards")
+                        throw new ConfigurationErrorException("Invalid CheckStandards.xlsx config. Error finding \"Calibration Standards\" section. Please ensure the CheckStandards.xlsx file is formatted properly.");
+
+                    row++; // get the first calib standard
+                    List<Sample> knownStandards = new List<Sample>();
+
+                    while (standardsws.Cells[row, col].Value.ToString() != "") // while not an empty cell
+                    {
+                       
+                    }
+                }
+            }
+
+            catch (Exception e)
+            {
+
+            }
 
         }// end WriteStandards
     }// end DataLoader class    
