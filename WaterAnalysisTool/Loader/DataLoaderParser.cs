@@ -14,7 +14,7 @@ namespace WaterAnalysisTool.Loader
         private DataLoader Loader;
         private StreamReader Input;
         private List<Sample> CalibrationSamples;        // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC - These will not always have the same number of elements(analytes) in the input text file
-        private List<Sample> CalibrationsStandards;     // Calibration Standard -> Sample Type: Cal
+        private List<Sample> CalibrationStandards;     // Calibration Standard -> Sample Type: Cal
         private List<Sample> QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC
         
         // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC - These will not always have the same number of elements(analytes) in the input text file
@@ -30,7 +30,7 @@ namespace WaterAnalysisTool.Loader
             this.Loader = loader;
             this.Input = inf;
             this.CalibrationSamples = new List<Sample>();
-            this.CalibrationsStandards = new List<Sample>();
+            this.CalibrationStandards = new List<Sample>();
             this.QualityControlSamples = new List<Sample>();
 
             this.CertifiedValueSamples = new List<SampleGroup>();
@@ -106,7 +106,7 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("The sample being added to the List<T> CalibrationsStandards is null\n");
 
-            this.CalibrationsStandards.Add(sample);
+            this.CalibrationStandards.Add(sample);
         }
 
 

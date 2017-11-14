@@ -46,6 +46,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Analyzer\AnalyticsLoader.cs" />
+    <Compile Include="Analyzer\AnalyticsParser.cs" />
     <Compile Include="Components\Element.cs" />
     <Compile Include="Components\Sample.cs" />
     <Compile Include="Components\SampleGroup.cs" />
