@@ -9,7 +9,7 @@ namespace WaterAnalysisTool
 {
     class Program
     {
-        /* The real main
+        /* The ~~real~~ main */
         static void Main(string[] args)
         {
             // The functionality of main:
@@ -21,7 +21,6 @@ namespace WaterAnalysisTool
             //      1.1.4. Create a new DataLoader and call its load function
             //  1.2. Accepts a command to create correlation matrices (analyze <location/name of input> <r^2 threshold>)
         }
-        */
 
         /* EPPlus Example. Find documentation at: http://www.nudoq.org/#!/Packages/EPPlus/EPPlus/OfficeOpenXml
         static void Main(string[] args)
@@ -56,7 +55,7 @@ namespace WaterAnalysisTool
             }
         }
         */
-        /* DataLoader Load() Tester */
+        /*DataLoader Load() Tester
         static void Main(string[] args)
         {
             SampleGroup CalibrationSamples;
@@ -190,6 +189,6 @@ namespace WaterAnalysisTool
 
                 loader.Load(); // Load calls Parse, don't need to in main; also saves the workbook
             }
-        }
+        } // end DataLoaderTester */
     }
 }

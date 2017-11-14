@@ -182,10 +182,10 @@ namespace WaterAnalysisTool.Loader
 
                     // this.ParseResults(sample);
 
-                    switch (sample) // Probably need getter for sampleType
-                    {
+                    //switch (sample) // Probably need getter for sampleType
+                    //{
                         // Add sample to the correct sample list depending on sampleType
-                    }
+                    //}
                 }
             }
         }
