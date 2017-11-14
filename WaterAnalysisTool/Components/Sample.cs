@@ -77,8 +77,8 @@ namespace WaterAnalysisTool.Components
         /* Public functions */
         public void AddElement(Element e)
         {
-            // TODO
-            // Error checking e
+            if (e == null)
+                throw new ArgumentNullException("Element is Null.\n");
 
             this.Elements.Add(e);
         }
