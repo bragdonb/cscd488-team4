@@ -80,17 +80,17 @@ namespace WaterAnalysisTool.Loader
                 {
                     this.AddCalibrationsStandard(sample);
                 }
-                else if (String.Compare(sample.Name, "Instrument Blank") == 0) // Assuming all Calibration Samples will be name "Instrument Blank"
+                else if (String.Compare(sample.SampleType, "QC") == 0) // Assuming all Calibration Samples will be name "Instrument Blank"
                 {
+                    if (String.Compare(sample.Name, this.CertifiedValueSampleGroup.Name) == 0)
+                    {
+                        // this.AddCertifiedValueSample(sample); // Need to add the sample to a sample group before adding it to the CertifiedValue list
+                    }
                     this.AddCalibrationsSample(sample);
                 }
                 else if (String.Compare(sample.Name, "CCV") == 0)
                 {
                     this.AddQualityControlSample(sample);
-                }
-                else if (String.Compare(sample.SampleType, ) == 0)
-                {
-                    // this.AddCertifiedValueSample(sample); // Need to add the sample to a sample group before adding it to the CertifiedValue list
                 }
                 else if (String.Compare(sample.SampleType, "Unk") == 0)
                 {
