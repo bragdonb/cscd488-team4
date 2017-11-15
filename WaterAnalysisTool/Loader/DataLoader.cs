@@ -3,8 +3,10 @@ using System.Drawing;
 using System.IO;
 using System.Collections.Generic;
 using OfficeOpenXml;
+using OfficeOpenXml.Drawing.Chart;
 using WaterAnalysisTool.Components;
 using WaterAnalysisTool.Exceptions;
+using System.Text.RegularExpressions;
 
 namespace WaterAnalysisTool.Loader
 {
@@ -51,8 +53,8 @@ namespace WaterAnalysisTool.Loader
                 throw new ArgumentOutOfRangeException("Invalid number of worksheets present in workbook.\n");
             #endregion
 
-            //DataLoaderParser parser = new DataLoaderParser(this, Input);
-            //parser.Parse();
+            DataLoaderParser parser = new DataLoaderParser(this, Input);
+            parser.Parse();
 
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
@@ -549,20 +551,52 @@ namespace WaterAnalysisTool.Loader
 
                 using (var p = new ExcelPackage(fi))
                 {
-                    row = 4;
-                    col = 1;
                     ExcelWorksheet standardsws = p.Workbook.Worksheets[2]; // TODO this index may change depending on if the CheckStandards.xlxs file changing
+
+                    row = 5;
+                    col = 1;
 
                     if (standardsws.Cells[row, col].Value.ToString() != "Calibration Standards")
                         throw new ConfigurationErrorException("Invalid CheckStandards.xlsx config. Error finding \"Calibration Standards\" section. Please ensure the CheckStandards.xlsx file is formatted properly.");
 
-                    row++; // get the first calib standard
-                    List<Sample> knownStandards = new List<Sample>();
+                    // Read in all Calibration Standards
+                    List<Sample> calibStandards = new List<Sample>();
+                    Sample s;
 
-                    while (standardsws.Cells[row, col].Value.ToString() != "") // while not an empty cell
+                    row++;
+                    col++;
+                    int rowOffset = 3;
+                    while (standardsws.Cells[row, col].Value.ToString() != "")
                     {
-                       
+                        col = 1;
+                        s = new Sample("", standardsws.Cells[row, col].Value.ToString(), "", "", 1);
+                         
+                        while(standardsws.Cells[row, col].Value.ToString() != "")
+                        {
+                            s.AddElement(new Element(standardsws.Cells[row - rowOffset, col].Value.ToString(), "", Double.Parse(standardsws.Cells[row, col].Value.ToString()), 0.0, 0.0));
+                            col++;
+                        }
+
+                        rowOffset++;
+                        row++;
+
+                        calibStandards.Add(s);
                     }
+
+                    // Pick out the calibration standard that matches the CCV concentration
+                    Regex rgx = new Regex(@"\d+:\d+", RegexOptions.None);
+                    Match match = rgx.Match(QualityControlSamples.Samples[0].Name);
+                    foreach (Sample ccv in calibStandards)
+                        if (ccv.Name.Contains(match.Value))
+                            s = ccv;
+
+                    // Build the chart
+                    var calCurve = standardsws.Drawings.AddChart("Calibration Curve", eChartType.XYScatter) as ExcelScatterChart;
+                    calCurve.Title.RichText.Add("Calibration Curve");
+                    calCurve.SetPosition(row + 2, 0, 1, 0);
+                    calCurve.SetSize(800, 600);
+
+
                 }
             }
 
