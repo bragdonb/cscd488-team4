@@ -51,6 +51,8 @@
     <Compile Include="Components\Element.cs" />
     <Compile Include="Components\Sample.cs" />
     <Compile Include="Components\SampleGroup.cs" />
+    <Compile Include="Exceptions\ConfigurationErrorException.cs" />
+    <Compile Include="Exceptions\ParseErrorException.cs" />
     <Compile Include="Loader\DataLoader.cs" />
     <Compile Include="Loader\DataLoaderParser.cs" />
     <Compile Include="Program.cs" />
