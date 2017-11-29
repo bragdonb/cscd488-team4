@@ -111,7 +111,6 @@ namespace WaterAnalysisTool
             } while (!stringArgs.ToLower().Equals("exit"));
 
             Console.WriteLine("Exiting...");
-
         }
 
         /* EPPlus Example. Find documentation at: http://www.nudoq.org/#!/Packages/EPPlus/EPPlus/OfficeOpenXml
@@ -147,7 +146,7 @@ namespace WaterAnalysisTool
             }
         }
         */
-        /*DataLoader Load() Tester
+        /* DataLoader Load() Tester
         static void Main(string[] args)
         {
             SampleGroup CalibrationSamples;
