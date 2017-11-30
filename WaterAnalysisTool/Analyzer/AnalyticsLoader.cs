@@ -18,7 +18,7 @@ namespace WaterAnalysisTool.Analyzer
         {
             this.DataWorkbook = datawb;
             this.Threshold = threshold;
-            this.Elements = new List<List<List<Element>>>);
+            this.Elements = new List<List<List<Element>>>();
         }
 
         /* Public Methods */

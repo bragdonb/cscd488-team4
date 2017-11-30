@@ -134,19 +134,19 @@ namespace WaterAnalysisTool.Loader
         private void PassSampleGroupsToDataLoader()
         {
             
-            for ()
-            {
+            //for ()
+            //{
                 // this.Loader.AddSampleGroup(new SampleGroup(this.Samples, NAME HERE));
-            }
+            //}
 
             // this.Loader.AddCalibrationSampleGroup(new SampleGroup(this.CalibrationSamples, NAME HERE));
             // this.Loader.AddCalibrationStandard(new SampleGroup(this.CalibrationsStandards, NAME HERE));
             // this.Loader.AddQualityControlSampleGroup(new SampleGroup(this.QualityControlSamples, NAME HERE));
 
-            for ()
-            {
+            //for ()
+            //{
                 // this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(this.CertifiedValueSamples, NAME HERE));
-            }
+            //}
         }
 
 

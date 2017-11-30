@@ -5,7 +5,7 @@ namespace WaterAnalysisTool.Components
 {
     class SampleGroup
     {
-        /* Attributes */
+        #region Attributes
         private String name;
         private bool skipFirst;
         private List<Sample> samples;//first row contains data from Check Standards file
@@ -15,7 +15,8 @@ namespace WaterAnalysisTool.Components
         private List<Double> percentDifference;
         private List<Double> rsd;
         private List<Double> recovery;
-        
+        #endregion
+
         #region Properties
         public String Name { get {return this.name;} }
 
@@ -34,7 +35,7 @@ namespace WaterAnalysisTool.Components
         public List<Sample> Samples { get { return this.samples; } }
         #endregion
 
-        /* Constructors */
+        #region Constructor(s)
         public SampleGroup(List<Sample> sampleList, String name, bool skipFirst)
         {
             this.name = name;
@@ -49,6 +50,7 @@ namespace WaterAnalysisTool.Components
             CalculatePercentDifference();
             CalculateRecovery();
         }
+        #endregion
 
         #region Private Methods
         private void CalculateAverage()

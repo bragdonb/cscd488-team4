@@ -65,6 +65,7 @@ namespace WaterAnalysisTool
                                     Console.WriteLine("about to do the loader stuff");
 
                                     DataLoader loader = new DataLoader(infile.OpenText(), p);
+                                    p.Save(); //comment this out when loader.Load() is uncommented
                                     //loader.Load();
                                 }
                             }
@@ -99,11 +100,16 @@ namespace WaterAnalysisTool
                                 }
                             }
                         }
-
+                        
                     }//end if(infile.Exists)
 
+                    else
+                    {
+                        Console.WriteLine("Input file does not exist.");
+                    }
+
                 }
-                catch(Exception e)
+                catch(Exception e)//make these messages more specific so that she knows exactly what went wrong
                 {
                     Console.WriteLine(e.GetType() + " " + e.Message) ;
                 }
@@ -113,6 +119,20 @@ namespace WaterAnalysisTool
             Console.WriteLine("Exiting...");
 
         }
+
+        /*TESTING FOR ANALYTICS PARSER
+         
+        static void Main(string[] args)
+        {
+            ExcelPackage ep = new ExcelPackage(new FileInfo(@"C:\Users\court\Documents\School\Fall2017\488\FinalFormat.xlsx"));
+            AnalyticsLoader an = new AnalyticsLoader(ep, 0.7);
+            AnalyticsParser ap = new AnalyticsParser(ep, an);
+            ap.Parse();
+            Console.ReadLine();
+        }
+
+        */
+        
 
         /* EPPlus Example. Find documentation at: http://www.nudoq.org/#!/Packages/EPPlus/EPPlus/OfficeOpenXml
         static void Main(string[] args)
