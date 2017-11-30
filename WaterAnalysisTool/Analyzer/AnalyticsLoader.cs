@@ -26,34 +26,71 @@ namespace WaterAnalysisTool.Analyzer
         {
             int count = 0;
             int index = 0;
+            int row = 0;
+            int col = 0;
             Double CoD; // Coefficient of Determination or r squared
+            List<Element> e2 = null;
 
             AnalyticsParser parser = new AnalyticsParser(this.DataWorkbook, this);
             parser.Parse();
 
-            if (this.Elements.Count < 2) // something went weird yo, needs to be at least two elements to create a correlation matrix
-                throw new ParseErrorException("Cannot create coefficient matrices for input file. Number of elements per sample in the input file must be greater than 1.");
+            if (Elements.Count < 1)
+                throw new ParseErrorException("Problem parsing input Excel workbook. No Sample groups found.");
 
+            this.DataWorkbook.Workbook.Worksheets.Add("Correlation");
+            var correlationws = this.DataWorkbook.Workbook.Worksheets[this.DataWorkbook.Workbook.Worksheets.Count]; // should be the last workbook
+
+            // Write outline for correlation matrices
+            for(int i = 0; i < Elements.Count; i++)
+            {
+                col = 0;
+                count = 0;
+
+                while(col < Elements[0].Count)
+                {
+                    col++;
+                    correlationws.Cells[row, col].Value = Elements[0][count][0].Name;
+                    count++;
+                }
+
+                col = 0;
+                count = 0;
+
+                while(row < Elements[0].Count)
+                {
+                    row++;
+                    correlationws.Cells[row, col].Value = Elements[0][count][0].Name;
+                    count++;
+                }
+
+                row++;
+            }
+
+            // Calculate Coefficient of Determination for each element pair for each sample group
             foreach (List<List<Element>> sg in Elements)
             {
+                index = 0;
+                count = 0;
+                row = 1; // TODO figure out how to get the row properly for multiple sample groups
+                
                 foreach (List<Element> e1 in sg)
                 {
-                    List<Element> e2 = null;
+ 
+                    count = index + 1;
 
-                    count++;
-
-                    while (index < count) // don't need to do calculations multiple times
+                    while (count < sg.Count)
                     {
-                        e2 = sg[index];
-                        index++;
+                        e2 = sg[count];
+                        CoD = CalculateCoeffiecientOfDetermination(e1, e2);
+
+                        // Write CoD in it's cell
+                        correlationws.Cells[row, count].Value = CalculateCoeffiecientOfDetermination(e1, e2).ToString();
+
+                        count++;
                     }
 
-                    CoD = CalculateCoefiecientOfDetermination(e1, e2);
-
-                    if (CoD > this.Threshold)
-                    {
-                        CreateCorrelationMatrix(e1, e2);
-                    }
+                    index++;
+                    row++;
                 }
             }
         }
@@ -67,7 +104,7 @@ namespace WaterAnalysisTool.Analyzer
         }
 
         /* Private Methods */
-        private Double CalculateCoefiecientOfDetermination(List<Element> e1, List<Element> e2)
+        private Double CalculateCoeffiecientOfDetermination(List<Element> e1, List<Element> e2)
         {
             Double stdev1 = CalculateElementStandardDeviation(e1);
             Double stdev2 = CalculateElementStandardDeviation(e2);
@@ -123,11 +160,6 @@ namespace WaterAnalysisTool.Analyzer
             }
 
             return sum / (e1.Count - 1);
-        }
-
-        private void CreateCorrelationMatrix(List<Element> e1, List<Element> e2)
-        {
-            // TODO
         }
     }
 }
