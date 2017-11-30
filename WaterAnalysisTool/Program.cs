@@ -117,7 +117,6 @@ namespace WaterAnalysisTool
             } while (!stringArgs.ToLower().Equals("exit"));
 
             Console.WriteLine("Exiting...");
-
         }
 
         /*TESTING FOR ANALYTICS PARSER
@@ -167,7 +166,7 @@ namespace WaterAnalysisTool
             }
         }
         */
-        /*DataLoader Load() Tester
+        /* DataLoader Load() Tester
         static void Main(string[] args)
         {
             SampleGroup CalibrationSamples;
