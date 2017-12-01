@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using WaterAnalysisTool.Components;
 using OfficeOpenXml;
+using WaterAnalysisTool.Exceptions;
 
 namespace WaterAnalysisTool.Analyzer
 {
@@ -32,12 +33,16 @@ namespace WaterAnalysisTool.Analyzer
         #region Public Methods
         public void Parse()
         {
+            if (this.dataWorkbook.File.Length < 4 || !this.dataWorkbook.File.Exists)
+                throw new ParseErrorException("Data Workbook does not exist or does not have correct contents.");
+
             this.row = 7;
             this.col = 3;
             int blankLineCount = 0;
             ExcelWorksheet dataws = this.dataWorkbook.Workbook.Worksheets[1]; //data worksheet
 
-            while (blankLineCount < 2)
+            /* Loop reads through file until it encounters the Samples section */
+            while (blankLineCount < 2 && blankLineCount >= 0)
             {
                 if (this.dataws.Cells[this.row, 1].Value != null)
                 {
@@ -47,16 +52,26 @@ namespace WaterAnalysisTool.Analyzer
                         blankLineCount = 0;
                     }
                     else
-                        blankLineCount = 2;
+                        blankLineCount = -1;
                 }
                 else
                 {
                     blankLineCount++;
                     this.row++;
-                }           
-           }
+                }
+            }
 
-            //now at Samples row. Next line is name of SampleGroup, line after that is first sample name within the first sample group.
+            if (blankLineCount > 1)
+            {
+                Console.WriteLine("No samples found in file.");
+                return;
+            }
+            
+            /* We have reached the Samples.
+               Next line should be the name of SampleGroup, 
+               the line after that should be the 
+               first sample name within the first SampleGroup.
+            */
             this.row += 2;
 
             while (!isEndOfWorksheet())
@@ -64,7 +79,13 @@ namespace WaterAnalysisTool.Analyzer
                 elements.Add(fillElementList());
                 this.row += 2;
             }
-
+            foreach (List<Element> le in elements)
+            {
+                foreach(Element e in le)
+                {
+                    Console.WriteLine(e.Name + " " + e.Average);
+                }
+            }
             this.loader.AddElements(elements);
 
         }

@@ -34,80 +34,76 @@ namespace WaterAnalysisTool
                     Console.Write("Enter command: ");
                     stringArgs = Console.ReadLine();
 
-                    Regex r = new Regex(@"("".*?"")|(\S+)");
-                    MatchCollection arguments = r.Matches(stringArgs);
-
-                    if (arguments.Count > 1)
-                        infile = new FileInfo(@arguments[1].Value);
-
-                    if (infile.Exists)
+                    if (stringArgs.ToLower().Equals("usage"))
+                        Console.WriteLine("parse <location/name of input> <location/name for output>\nanalyze <location/name of input> <r^2 threshold>");
+                    else
                     {
-                        Console.WriteLine("if (infile.Exists)");
+                        Regex r = new Regex(@"("".*?"")|(\S+)");
+                        MatchCollection arguments = r.Matches(stringArgs);
 
-                        if (arguments[0].Value.ToLower().Equals("parse"))
+                        if (arguments.Count > 1)
+                            infile = new FileInfo(@arguments[1].Value);
+
+                        if (infile.Exists)
                         {
-                            Console.WriteLine("if (arguments[0].Value.ToLower().Equals(\"parse\"))");
-                            if (arguments.Count > 2)
+                            if (arguments[0].Value.ToLower().Equals("parse"))
                             {
-                                Console.WriteLine("if (arguments.Count > 2)");
-
-                                outfile = new FileInfo(@arguments[2].Value);
-                                if (outfile.Exists)
-                                    outfile.Delete();
-
-                                using (ExcelPackage p = new ExcelPackage(new FileInfo(@arguments[2].Value)))
+                                if (arguments.Count > 2)
                                 {
-                                    p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
-                                    p.Workbook.Worksheets.Add("Data");
-                                    p.Workbook.Worksheets.Add("Calibration Standards");
-                                    p.Workbook.Worksheets.Add("Graphs"); //maybe rename
+                                    outfile = new FileInfo(@arguments[2].Value);
+                                    if (outfile.Exists)
+                                        outfile.Delete();
 
-                                    Console.WriteLine("about to do the loader stuff");
+                                    using (ExcelPackage p = new ExcelPackage(new FileInfo(@arguments[2].Value)))
+                                    {
+                                        p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
+                                        p.Workbook.Worksheets.Add("Data");
+                                        p.Workbook.Worksheets.Add("Calibration Standards");
+                                        p.Workbook.Worksheets.Add("Graphs"); //maybe rename
 
-                                    DataLoader loader = new DataLoader(infile.OpenText(), p);
-                                    p.Save(); //comment this out when loader.Load() is uncommented
-                                    //loader.Load();
+                                        DataLoader loader = new DataLoader(infile.OpenText(), p);
+                                        p.Save(); //comment this out when loader.Load() is uncommented
+                                                  //loader.Load();
+                                    }
                                 }
                             }
-                        }
 
-                        else if (arguments[0].Value.ToLower().Equals("analyze"))
-                        {
-                            Console.WriteLine("else if (arguments[0].Value.ToLower().Equals(\"analyze\"))");
-
-                            threshold = 0.7;
-                            if (arguments.Count > 2)
+                            else if (arguments[0].Value.ToLower().Equals("analyze"))
                             {
-                                if (Double.TryParse(arguments[2].Value, out r2val))
+                                threshold = 0.7;
+                                if (arguments.Count > 2)
                                 {
-                                    if (r2val <= 1 && r2val >= 0)
-                                        threshold = r2val;
+                                    if (Double.TryParse(arguments[2].Value, out r2val))
+                                    {
+                                        if (r2val <= 1 && r2val >= 0)
+                                            threshold = r2val;
+                                        else
+                                            threshold = -1;
+                                    }
+
                                     else
                                         threshold = -1;
                                 }
 
-                                else
-                                    threshold = -1;
-                            }
-
-                            if (threshold != -1)
-                            {
-                                //threshold now has correct value
-                                Console.WriteLine("threshold is not -1, it is " + threshold);
-                                using (ExcelPackage p = new ExcelPackage(infile))//TODO see if this works with a file that isn't an xlsx file
+                                if (threshold != -1)
                                 {
-                                    AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
+                                    //threshold now has correct value
+                                    Console.WriteLine("threshold is not -1, it is " + threshold);
+                                    using (ExcelPackage p = new ExcelPackage(infile))//TODO see if this works with a file that isn't an xlsx file
+                                    {
+                                        AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
+                                        analyticsLoader.Load();
+                                    }
                                 }
                             }
+
+                        }//end if(infile.Exists)
+
+                        else
+                        {
+                            Console.WriteLine("Input file does not exist.");
                         }
-                        
-                    }//end if(infile.Exists)
-
-                    else
-                    {
-                        Console.WriteLine("Input file does not exist.");
                     }
-
                 }
                 catch(Exception e)//make these messages more specific so that she knows exactly what went wrong
                 {

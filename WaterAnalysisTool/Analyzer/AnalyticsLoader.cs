@@ -26,8 +26,8 @@ namespace WaterAnalysisTool.Analyzer
         {
             int count = 0;
             int index = 0;
-            int row = 0;
-            int col = 0;
+            int row = 1;
+            int col = 1;
             Double CoD; // Coefficient of Determination or r squared
             List<Element> e2 = null;
 
@@ -43,7 +43,7 @@ namespace WaterAnalysisTool.Analyzer
             // Write outline for correlation matrices
             for(int i = 0; i < Elements.Count; i++)
             {
-                col = 0;
+                col = 1;
                 count = 0;
 
                 while(col < Elements[0].Count)
@@ -53,7 +53,7 @@ namespace WaterAnalysisTool.Analyzer
                     count++;
                 }
 
-                col = 0;
+                col = 1;
                 count = 0;
 
                 while(row < Elements[0].Count)
