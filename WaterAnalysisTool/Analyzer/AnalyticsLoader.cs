@@ -46,7 +46,7 @@ namespace WaterAnalysisTool.Analyzer
                 col = 1;
                 count = 0;
 
-                while(col < Elements[0].Count)
+                while(col <= Elements[0].Count)
                 {
                     col++;
                     correlationws.Cells[row, col].Value = Elements[0][count][0].Name;
@@ -56,7 +56,7 @@ namespace WaterAnalysisTool.Analyzer
                 col = 1;
                 count = 0;
 
-                while(row < Elements[0].Count)
+                while(row <= Elements[0].Count)
                 {
                     row++;
                     correlationws.Cells[row, col].Value = Elements[0][count][0].Name;
@@ -70,7 +70,7 @@ namespace WaterAnalysisTool.Analyzer
             foreach (List<List<Element>> sg in Elements)
             {
                 index = 0;
-                count = 0;
+                count = 1;
                 row = 1; // TODO figure out how to get the row properly for multiple sample groups
                 
                 foreach (List<Element> e1 in sg)
@@ -78,7 +78,7 @@ namespace WaterAnalysisTool.Analyzer
  
                     count = index + 1;
 
-                    while (count < sg.Count)
+                    while (count <= sg.Count)
                     {
                         e2 = sg[count];
                         CoD = CalculateCoeffiecientOfDetermination(e1, e2);
