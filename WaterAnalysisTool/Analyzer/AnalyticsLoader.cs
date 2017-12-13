@@ -66,12 +66,15 @@ namespace WaterAnalysisTool.Analyzer
                 row++;
             }
 
+            this.DataWorkbook.Save();
+
             // Calculate Coefficient of Determination for each element pair for each sample group
+            // TODO should probably ignore analyte pairs where one is invalid (-1)
             foreach (List<List<Element>> sg in Elements)
             {
                 index = 0;
                 count = 0;
-                row = 1; // TODO figure out how to get the row properly for multiple sample groups
+                row = 2; // TODO figure out how to get the row properly for multiple sample groups
                 
                 foreach (List<Element> e1 in sg)
                 {
@@ -85,7 +88,6 @@ namespace WaterAnalysisTool.Analyzer
 
                         // Write CoD in it's cell
                         correlationws.Cells[row, count].Value = CalculateCoeffiecientOfDetermination(e1, e2).ToString();
-
                         count++;
                     }
 
@@ -100,6 +102,7 @@ namespace WaterAnalysisTool.Analyzer
             if (elements == null)
                 throw new ArgumentNullException("List of elements is null.");
 
+            // Need to like deep copy or something
             this.Elements.Add(elements);
         }
 

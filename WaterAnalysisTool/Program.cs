@@ -88,7 +88,7 @@ namespace WaterAnalysisTool
                                 if (threshold != -1)
                                 {
                                     //threshold now has correct value
-                                    Console.WriteLine("threshold is not -1, it is " + threshold);
+                                    //Console.WriteLine("threshold is not -1, it is " + threshold);
                                     using (ExcelPackage p = new ExcelPackage(infile))//TODO see if this works with a file that isn't an xlsx file
                                     {
                                         AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
@@ -105,7 +105,7 @@ namespace WaterAnalysisTool
                         }
                     }
                 }
-                catch(Exception e)//make these messages more specific so that she knows exactly what went wrong
+                catch(Exception e)//TODO make these messages more specific so that she knows exactly what went wrong
                 {
                     Console.WriteLine(e.GetType() + " " + e.Message) ;
                 }

@@ -76,17 +76,20 @@ namespace WaterAnalysisTool.Analyzer
 
             while (!isEndOfWorksheet())
             {
-                elements.Add(fillElementList());
+                // elements.Add(fillElementList()); // needs to add the sample group's list of element lists to the loader
+                fillElementList();
+                this.loader.AddElements(this.elements);
+                this.elements.Clear();
                 this.row += 2;
             }
-            foreach (List<Element> le in elements)
+            /*foreach (List<Element> le in elements)
             {
                 foreach(Element e in le)
                 {
                     Console.WriteLine(e.Name + " " + e.Average);
                 }
-            }
-            this.loader.AddElements(elements);
+            }*/
+            // this.loader.AddElements(elements);
 
         }
         #endregion
@@ -95,15 +98,19 @@ namespace WaterAnalysisTool.Analyzer
         private List<Element> fillElementList()
         {
             this.resetRow = this.row;
-            int colLength = 0;
+            int colLength = 0; // TODO I am pretty sure this needs to start at one? Last iteration of first run skips increment for last data point (originally was zero, is probably fine, don't wanna think about it.)
             bool firstRun = true;
 
-            List<Element> analytes = new List<Element>();
+            // move inside for loop, new list for each element
+            //List<Element> analytes = new List<Element>();
 
             for (int x = 0; this.dataws.Cells[this.row, this.col].Value != null; x++)
             {
+                List<Element> analytes = new List<Element>();
+
                 for (int y = 0; this.dataws.Cells[this.row, this.col].Value != null; y++)
                 {
+                    /*TODO Testing*/ Console.WriteLine("Trying to parse: " + this.dataws.Cells[this.row, this.col].Value.ToString() + "   " + "\tfor element: " + this.elementNames[x] + "\tx = " + x + "\ty = " + y);
                     analytes.Add(new Element(this.elementNames[x], "", Double.Parse(this.dataws.Cells[this.row, this.col].Value.ToString()), 0.0, 0.0));
                     this.row++;
                     if (firstRun)
@@ -112,12 +119,18 @@ namespace WaterAnalysisTool.Analyzer
                 firstRun = false;
                 this.row = this.resetRow;
                 this.col++;
+
+                // need to add to the list that represents the sample list then clear the list for re-use, otherwise elements just get added to the same list
+                this.elements.Add(analytes);
+                //analytes.Clear(); // I lied don't clear it doesn't make a deep copy
             }
 
             this.row += colLength;//at blank space after first samplegroup
             this.col = 3;
 
-            return analytes;
+            // doesn't really need to return now
+            //return analytes;
+            return null;
         }
 
         private bool isEndOfWorksheet()
