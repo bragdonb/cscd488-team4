@@ -46,7 +46,7 @@ namespace WaterAnalysisTool.Analyzer
                 col = 1;
                 count = 0;
 
-                while(col < Elements[0].Count)
+                while(col <= Elements[0].Count)
                 {
                     col++;
                     correlationws.Cells[row, col].Value = Elements[0][count][0].Name;
@@ -56,7 +56,7 @@ namespace WaterAnalysisTool.Analyzer
                 col = 1;
                 count = 0;
 
-                while(row < Elements[0].Count)
+                while(row <= Elements[0].Count)
                 {
                     row++;
                     correlationws.Cells[row, col].Value = Elements[0][count][0].Name;
@@ -66,28 +66,26 @@ namespace WaterAnalysisTool.Analyzer
                 row++;
             }
 
-            this.DataWorkbook.Save();
-
             // Calculate Coefficient of Determination for each element pair for each sample group
-            // TODO should probably ignore analyte pairs where one is invalid (-1)
             foreach (List<List<Element>> sg in Elements)
             {
                 index = 0;
-                count = 0;
-                row = 2; // TODO figure out how to get the row properly for multiple sample groups
+                count = 1;
+                row = 1; // TODO figure out how to get the row properly for multiple sample groups
                 
                 foreach (List<Element> e1 in sg)
                 {
  
                     count = index + 1;
 
-                    while (count < sg.Count)
+                    while (count <= sg.Count)
                     {
                         e2 = sg[count];
                         CoD = CalculateCoeffiecientOfDetermination(e1, e2);
 
                         // Write CoD in it's cell
                         correlationws.Cells[row, count].Value = CalculateCoeffiecientOfDetermination(e1, e2).ToString();
+
                         count++;
                     }
 
@@ -102,7 +100,6 @@ namespace WaterAnalysisTool.Analyzer
             if (elements == null)
                 throw new ArgumentNullException("List of elements is null.");
 
-            // Need to like deep copy or something
             this.Elements.Add(elements);
         }
 

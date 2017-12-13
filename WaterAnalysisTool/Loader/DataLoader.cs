@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 
 namespace WaterAnalysisTool.Loader
 {
+    // TODO configure to write the header "Samples" before wiritng the generic samples portion
+    // TODO configure to only offset generic sample groups by one row
     class DataLoader
     {
         /* Attributes */
