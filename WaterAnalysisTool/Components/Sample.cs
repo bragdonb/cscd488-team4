@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace WaterAnalysisTool.Components
 {
-    class Sample
+    class Sample : ICloneable
     {
-        /* Attributes */
+        #region Attributes
         private List<Element> elements;
         private String method;
         private String name;
@@ -13,6 +13,7 @@ namespace WaterAnalysisTool.Components
         private String runTime;
         private String sampleType;
         private int repeats;
+        #endregion
 
         #region Properties
         public List<Element> Elements
@@ -51,7 +52,7 @@ namespace WaterAnalysisTool.Components
         }
         #endregion
 
-        /* Constructors */
+        #region Constructors
         public Sample(String method, String name, String comment, String runTime, String sampleType, Int32 rpts)
         {
             this.method = method;
@@ -73,8 +74,9 @@ namespace WaterAnalysisTool.Components
             this.repeats = rpts;
             this.elements = new List<Element>();
         }
+        #endregion
 
-        /* Public functions */
+        #region Public Methods
         public void AddElement(Element e)
         {
             if (e == null)
@@ -82,5 +84,18 @@ namespace WaterAnalysisTool.Components
 
             this.Elements.Add(e);
         }
+
+        public Object Clone()
+        {
+            Sample clone = new Sample(this.method, this.name, this.comment, this.runTime, this.sampleType, this.repeats);
+
+            foreach(Element e in this.elements)
+            {
+                clone.elements.Add((Element) e.Clone());
+            }
+
+            return clone;
+        }
+        #endregion
     }
 }

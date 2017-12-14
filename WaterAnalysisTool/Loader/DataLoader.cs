@@ -14,7 +14,7 @@ namespace WaterAnalysisTool.Loader
     // TODO configure to only offset generic sample groups by one row
     class DataLoader
     {
-        /* Attributes */
+        #region Attributes
         private SampleGroup CalibrationSamples;             // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
         private SampleGroup CalibrationStandards;           // Calibration Standard -> Sample Type: Cal
         private SampleGroup QualityControlSamples;          // Stated Values (CCV) -> Sample Type: QC
@@ -23,8 +23,9 @@ namespace WaterAnalysisTool.Loader
 
         private StreamReader Input;
         private ExcelPackage Output;
+        #endregion
 
-        /* Constructors */
+        #region Constructors
         public DataLoader(StreamReader inf, ExcelPackage outf)
         {
             this.Input = inf;
@@ -33,8 +34,9 @@ namespace WaterAnalysisTool.Loader
             this.CertifiedValueSamples = new List<SampleGroup>();
             this.Samples = new List<SampleGroup>();
         }
+        #endregion
 
-        /* Public Methods */
+        #region Public Methods
         public void Load()
         {
             // Load performs the following functions:
@@ -125,7 +127,7 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("SampleGroup (Calibration Sample) is null.\n");
 
-            this.CalibrationSamples = sample;
+            this.CalibrationSamples = (SampleGroup) sample.Clone();
         }
 
         public void AddCalibrationStandard(SampleGroup sample)
@@ -133,7 +135,7 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("SampleGroup (Calibration Standard) is null.\n");
 
-            this.CalibrationStandards = sample;
+            this.CalibrationStandards = (SampleGroup) sample.Clone();
         }
 
         public void AddQualityControlSampleGroup(SampleGroup sample)
@@ -141,7 +143,7 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("SampleGroup (Quality Control) is null.\n");
 
-            this.QualityControlSamples = sample;
+            this.QualityControlSamples = (SampleGroup) sample.Clone();
         }
 
         public void AddCertifiedValueSampleGroup(SampleGroup sample)
@@ -149,7 +151,7 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("SampleGroup (Certified Value) is null.\n");
 
-            this.CertifiedValueSamples.Add(sample);
+            this.CertifiedValueSamples.Add((SampleGroup) sample.Clone());
         }
 
         public void AddSampleGroup(SampleGroup sample)
@@ -157,11 +159,12 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("SampleGroup (Generic) is null.\n");
 
-            this.Samples.Add(sample);
+            this.Samples.Add((SampleGroup) sample.Clone());
         }
         #endregion
+        #endregion
 
-        /* Private Methods */
+        #region Private Methods
         private int WriteSamples(ExcelWorksheet dataws, SampleGroup samples, String type, int row)
         {
             int count = 0;
@@ -561,7 +564,7 @@ namespace WaterAnalysisTool.Loader
             {
                 Console.WriteLine(e.Message);
             }
-
         }// end WriteStandards
-    }// end DataLoader class    
-}// end WaterAnalysisTool.Loader namespace
+        #endregion
+    }   
+}

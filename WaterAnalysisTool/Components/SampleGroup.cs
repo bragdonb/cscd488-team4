@@ -3,12 +3,12 @@ using System.Collections.Generic;
 
 namespace WaterAnalysisTool.Components
 {
-    class SampleGroup
+    class SampleGroup : ICloneable
     {
         #region Attributes
         private String name;
         private bool skipFirst;
-        private List<Sample> samples;//first row contains data from Check Standards file
+        private List<Sample> samples; // first row contains data from Check Standards file
         private List<Double> average;
         private List<Double> lod;
         private List<Double> loq;
@@ -35,7 +35,7 @@ namespace WaterAnalysisTool.Components
         public List<Sample> Samples { get { return this.samples; } }
         #endregion
 
-        #region Constructor(s)
+        #region Constructors
         public SampleGroup(List<Sample> sampleList, String name, bool skipFirst)
         {
             this.name = name;
@@ -49,6 +49,14 @@ namespace WaterAnalysisTool.Components
             CalculateLODandLOQandRSD();
             CalculatePercentDifference();
             CalculateRecovery();
+        }
+        #endregion
+
+        #region Public Methods
+        public Object Clone()
+        {
+            SampleGroup clone = new SampleGroup(this.samples, this.name, this.skipFirst);
+            return clone;
         }
         #endregion
 
@@ -165,7 +173,6 @@ namespace WaterAnalysisTool.Components
                     this.recovery[x] = this.average[x] / this.samples[0].Elements[x].Average * 100;
             }
         }//CalculateRecovery()
-
+        #endregion
     }
-    #endregion
 }

@@ -2,14 +2,15 @@
 
 namespace WaterAnalysisTool.Components
 {
-    class Element
+    class Element : ICloneable
     {
-        /* Attributes */
+        #region Attributes
         private String name;
         private String units;
         private double avg;
         private double stddev;
         private double rsd;
+        #endregion
 
         #region Properties
         public String Name
@@ -38,7 +39,7 @@ namespace WaterAnalysisTool.Components
         }
         #endregion
 
-        /* Constructors */
+        #region Constructors
         public Element(String name, String units, Double avg, Double stddev, Double rsd)
         {
             this.name = name;
@@ -47,7 +48,14 @@ namespace WaterAnalysisTool.Components
             this.stddev = stddev;
             this.rsd = rsd;
         }
+        #endregion
 
-        /* Public Functions */
+        #region Public Methods
+        public Object Clone()
+        {
+            Element clone = new Element(this.name, this.units, this.avg, this.stddev, this.rsd);
+            return clone;
+        }
+        #endregion
     }
 }

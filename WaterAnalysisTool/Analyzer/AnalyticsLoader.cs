@@ -8,20 +8,22 @@ namespace WaterAnalysisTool.Analyzer
 {
     class AnalyticsLoader
     {
-        /* Attributes */
+        #region Attributes
         private List<List<List<Element>>> Elements; // each list of elements represents data for one element
         private ExcelPackage DataWorkbook;
         private Double Threshold;
+        #endregion
 
-        /* Constructors */
+        #region Constructors
         public AnalyticsLoader(ExcelPackage datawb, Double threshold)
         {
             this.DataWorkbook = datawb;
             this.Threshold = threshold;
             this.Elements = new List<List<List<Element>>>();
         }
+        #endregion
 
-        /* Public Methods */
+        #region Public Methods
         public void Load()
         {
             int count = 0;
@@ -100,10 +102,25 @@ namespace WaterAnalysisTool.Analyzer
             if (elements == null)
                 throw new ArgumentNullException("List of elements is null.");
 
-            this.Elements.Add(elements);
-        }
+            List<List<Element>> sampleGroup = new List<List<Element>>();
 
-        /* Private Methods */
+            foreach(List<Element> els in elements)
+            {
+                List<Element> elementList = new List<Element>();
+
+                foreach(Element e in els)
+                {
+                    elementList.Add((Element)e.Clone());
+                }
+
+                sampleGroup.Add(elementList);
+            }
+
+            this.Elements.Add(sampleGroup);
+        }
+        #endregion
+
+        #region Private Methods
         private Double CalculateCoeffiecientOfDetermination(List<Element> e1, List<Element> e2)
         {
             Double stdev1 = CalculateElementStandardDeviation(e1);
@@ -161,5 +178,6 @@ namespace WaterAnalysisTool.Analyzer
 
             return sum / (e1.Count - 1);
         }
+        #endregion
     }
 }
