@@ -21,6 +21,7 @@ namespace WaterAnalysisTool.Loader
         private List<SampleGroup> CertifiedValueSamples;    // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC
         private List<SampleGroup> Samples;                  // Generic Samples -> Sample Type: Unk
 
+        private List<String> Messages;
         private StreamReader Input;
         private ExcelPackage Output;
         #endregion
@@ -33,6 +34,8 @@ namespace WaterAnalysisTool.Loader
 
             this.CertifiedValueSamples = new List<SampleGroup>();
             this.Samples = new List<SampleGroup>();
+
+            this.Messages = new List<String>();
         }
         #endregion
 
@@ -113,12 +116,18 @@ namespace WaterAnalysisTool.Loader
                     row = WriteSamples(dataws, g, nameof(Samples), row);
             }
 
+            this.Messages.Add("Samples written to excel sheet successfully.");
+
             // Write calibration standards
             var calibws = this.Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
             WriteStandards(calibws, CalibrationStandards);
 
-            // SAVE IT
             this.Output.Save();
+
+            this.Messages.Add("Formatted Excel sheet generated successfullly.");
+
+            foreach (String msg in this.Messages)
+                Console.WriteLine("\t" + msg);
         } // end Load
 
         #region Add<Sample>
@@ -503,6 +512,8 @@ namespace WaterAnalysisTool.Loader
             }
             #endregion
 
+            this.Messages.Add(type + " written to excel sheet successfully");
+
             return  row + 2;
         }// end WriteSamples
 
@@ -544,6 +555,8 @@ namespace WaterAnalysisTool.Loader
 
             int endRow = row + 2;
 
+            this.Messages.Add("Calibration standards written to excel sheet successfully");
+
             // TODO Create the calibration curve graph
             // 1. Open the CheckStandards.xlsx sheet where the stock solution concentrations can be found and read them in
             //  1.1 Have to worry about not every concentration in the standards list
@@ -552,12 +565,14 @@ namespace WaterAnalysisTool.Loader
             {
                 FileInfo fi = new FileInfo("CheckStandards.xlsx");
                 if (!fi.Exists)
-                    throw new FileNotFoundException("The CheckStandards.xlsx config file does not exist or could not be found and a calibration curve could not be generated.");
+                    throw new FileNotFoundException("Error: The CheckStandards.xlsx config file does not exist or could not be found and a calibration curve could not be generated.");
 
                 using (var p = new ExcelPackage(fi))
                 {
                     ExcelWorksheet standardsws = p.Workbook.Worksheets[2]; // TODO this index may change depending on if the CheckStandards.xlxs file changing
                 }
+
+                this.Messages.Add("Calibration curve generated successfully");
             }
 
             catch (Exception e)

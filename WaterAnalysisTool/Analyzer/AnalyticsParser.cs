@@ -31,6 +31,7 @@ namespace WaterAnalysisTool.Analyzer
         #endregion
 
         #region Public Methods
+        //TODO parse sample group names as well and pass them to the loader using loader.AddSampleName(sgName)
         public void Parse()
         {
             if (this.dataWorkbook.File.Length < 4 || !this.dataWorkbook.File.Exists)
@@ -79,6 +80,8 @@ namespace WaterAnalysisTool.Analyzer
                 // elements.Add(fillElementList()); // needs to add the sample group's list of element lists to the loader
                 fillElementList();
                 this.loader.AddElements(this.elements);
+                /*TESTING*/
+                this.loader.AddSampleName("Test Sample Name");
                 this.elements.Clear();
                 this.row += 2;
             }

@@ -12,6 +12,8 @@ namespace WaterAnalysisTool
     class Program
     {
         /* The ~~real~~ main */
+        //TODO change so files can be opened without needing to type their extension
+        //TODO handle filenames with spaces (surrounded by "")
         static void Main(string[] args)
         {
             // The functionality of main:
@@ -64,8 +66,6 @@ namespace WaterAnalysisTool
 
                                         DataLoader loader = new DataLoader(infile.OpenText(), p);
                                         loader.Load();
-
-                                        Console.WriteLine("Excel sheet generated successfully.");
                                     }
                                 }
                             }
@@ -95,8 +95,6 @@ namespace WaterAnalysisTool
                                     {
                                         AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
                                         analyticsLoader.Load();
-
-                                        Console.WriteLine("Correlation matrix generated successfuly.");
                                     }
                                 }
                             }

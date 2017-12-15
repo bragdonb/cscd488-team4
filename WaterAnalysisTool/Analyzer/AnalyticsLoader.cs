@@ -11,6 +11,8 @@ namespace WaterAnalysisTool.Analyzer
     {
         #region Attributes
         private List<List<List<Element>>> Elements; // each list of elements represents data for one element
+        private List<String> SampleNames;
+        private List<String> Messages;
         private ExcelPackage DataWorkbook;
         private Double Threshold;
         #endregion
@@ -21,6 +23,8 @@ namespace WaterAnalysisTool.Analyzer
             this.DataWorkbook = datawb;
             this.Threshold = threshold;
             this.Elements = new List<List<List<Element>>>();
+            this.SampleNames = new List<String>();
+            this.Messages = new List<String>();
         }
         #endregion
 
@@ -47,6 +51,10 @@ namespace WaterAnalysisTool.Analyzer
             // Write outline for correlation matrices
             for(int i = 0; i < Elements.Count; i++)
             {
+                correlationws.Cells[row, col].Value = this.SampleNames[i];
+                correlationws.Cells[row, col].Style.Font.Bold = true;
+
+                row++;
                 col = 1;
                 count = 0;
 
@@ -54,6 +62,7 @@ namespace WaterAnalysisTool.Analyzer
                 {
                     col++;
                     correlationws.Cells[row, col].Value = Elements[i][count][i].Name;
+                    correlationws.Cells[row, col].Style.Font.Bold = true;
                     count++;
                 }
 
@@ -64,6 +73,7 @@ namespace WaterAnalysisTool.Analyzer
                 {
                     row++;
                     correlationws.Cells[row, col].Value = Elements[i][count][i].Name;
+                    correlationws.Cells[row, col].Style.Font.Bold = true;
                     count++;
                 }
 
@@ -71,10 +81,9 @@ namespace WaterAnalysisTool.Analyzer
             }
 
             // Calculate Coefficient of Determination for each element pair for each sample group
-            // TODO I am too sick to figure out if this is actually working or not but it is weird...
             foreach (List<List<Element>> sg in Elements)
             {
-                row = 2 + (matrixIndex * (sg.Count + 2));
+                row = 3 + (matrixIndex * (sg.Count + 3));
                 index = 0;
                 count = 0;
 
@@ -82,18 +91,24 @@ namespace WaterAnalysisTool.Analyzer
                 {
                     count = index + 1;
 
-                    while (count < sg.Count)
+                    while (count <= sg.Count)
                     {
-                        e2 = sg[count];
+                        e2 = sg[count - 1];
 
                         CoD = CalculateCoeffiecientOfDetermination(e1, e2);
 
-                        correlationws.Cells[row, count + 2].Value = CoD;
+                        correlationws.Cells[row, count + 1].Value = CoD;
 
                         if (CoD >= this.Threshold)
                         {
-                            correlationws.Cells[row, count + 2].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                            correlationws.Cells[row, count + 2].Style.Fill.BackgroundColor.SetColor(Color.Green);
+                            if (e1[0].Name != e2[0].Name)
+                                correlationws.Cells[row, count + 1].Style.Font.Color.SetColor(Color.Green);
+
+                            else
+                            {
+                                correlationws.Cells[row, count + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                                correlationws.Cells[row, count + 1].Style.Fill.BackgroundColor.SetColor(Color.Gray);
+                            }
                         }
 
                         count++;
@@ -107,6 +122,10 @@ namespace WaterAnalysisTool.Analyzer
             }
 
             this.DataWorkbook.Save();
+            this.Messages.Add("Correlation matrix generated successfully.");
+
+            foreach (String msg in this.Messages)
+                Console.WriteLine("\t" + msg);
         }
 
         public void AddElements(List<List<Element>> elements)
@@ -130,13 +149,38 @@ namespace WaterAnalysisTool.Analyzer
 
             this.Elements.Add(sampleGroup);
         }
+
+        public void AddSampleName(String sgName)
+        {
+            if (sgName == null)
+                throw new ArgumentNullException("Sample name is null.");
+
+            this.SampleNames.Add(sgName);
+        }
         #endregion
 
         #region Private Methods
         private Double CalculateCoeffiecientOfDetermination(List<Element> e1, List<Element> e2)
         {
+            String msg;
             Double stdev1 = CalculateElementStandardDeviation(e1);
             Double stdev2 = CalculateElementStandardDeviation(e2);
+
+            if (stdev1 == 0)
+            {
+                msg = "Warning: Standard deviation for " + e1[0].Name + " is zero. Some r^2 values may be missing.";
+
+                if (!this.Messages.Contains(msg))
+                    this.Messages.Add(msg);
+            }
+
+            if (stdev2 == 0)
+            {
+                msg = "Warning: Standard deviation for " + e2[0].Name + " is zero. Some r^2 values may be missing.";
+
+                if (!this.Messages.Contains(msg))
+                    this.Messages.Add(msg);
+            }
 
             Double coVar = CalculateElementCovariance(e1, e2);
 
@@ -146,7 +190,7 @@ namespace WaterAnalysisTool.Analyzer
         private Double CalculateElementStandardDeviation(List<Element> els)
         {
             if (els.Count < 1)
-                throw new ArgumentException("To calculate standard deviation the length of the set must be greater than 0");
+                throw new ArgumentException("Error: To calculate standard deviation the length of a set must be greater than 0. Problem with " + els[0].Name + ".");
 
             Double avg = 0;
             foreach (Element e in els)
@@ -156,17 +200,17 @@ namespace WaterAnalysisTool.Analyzer
 
             Double sum = 0;
             foreach (Element e in els)
-                sum += e.Average * e.Average;
+                sum += Math.Pow((e.Average - avg), 2);
 
             Double sumavg = sum / (els.Count - 1);
 
-            return Math.Sqrt(sumavg - (avg * avg));
+            return Math.Sqrt(sumavg);
         }
 
         private Double CalculateElementCovariance(List<Element> e1, List<Element> e2)
         {
             if (e1.Count != e2.Count || e1.Count < 1 || e2.Count < 1)
-                throw new ArgumentException("To calculate covariance the length of both sets must be equal and greater than 0.");
+                throw new ArgumentException("Error: To calculate covariance the length of both sets must be equal and greater than 0. Problem with " + e1[0].Name + " and " + e2[0].Name + ".");
 
             Double avg1 = 0;
             foreach (Element e in e1)
