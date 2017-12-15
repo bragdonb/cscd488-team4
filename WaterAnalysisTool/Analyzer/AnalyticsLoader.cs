@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Collections.Generic;
 using WaterAnalysisTool.Components;
 using OfficeOpenXml;
@@ -30,6 +31,7 @@ namespace WaterAnalysisTool.Analyzer
             int index = 0;
             int row = 1;
             int col = 1;
+            int matrixIndex = 0;
             Double CoD; // Coefficient of Determination or r squared
             List<Element> e2 = null;
 
@@ -48,45 +50,51 @@ namespace WaterAnalysisTool.Analyzer
                 col = 1;
                 count = 0;
 
-                while(col <= Elements[0].Count)
+                while(count < Elements[i].Count)
                 {
                     col++;
-                    correlationws.Cells[row, col].Value = Elements[0][count][0].Name;
+                    correlationws.Cells[row, col].Value = Elements[i][count][i].Name;
                     count++;
                 }
 
                 col = 1;
                 count = 0;
 
-                while(row <= Elements[0].Count)
+                while(count < Elements[i].Count)
                 {
                     row++;
-                    correlationws.Cells[row, col].Value = Elements[0][count][0].Name;
+                    correlationws.Cells[row, col].Value = Elements[i][count][i].Name;
                     count++;
                 }
 
-                row++;
+                row += 2;
             }
 
             // Calculate Coefficient of Determination for each element pair for each sample group
+            // TODO I am too sick to figure out if this is actually working or not but it is weird...
             foreach (List<List<Element>> sg in Elements)
             {
+                row = 2 + (matrixIndex * (sg.Count + 2));
                 index = 0;
-                count = 1;
-                row = 1; // TODO figure out how to get the row properly for multiple sample groups
-                
+                count = 0;
+
                 foreach (List<Element> e1 in sg)
                 {
- 
                     count = index + 1;
 
-                    while (count <= sg.Count)
+                    while (count < sg.Count)
                     {
                         e2 = sg[count];
+
                         CoD = CalculateCoeffiecientOfDetermination(e1, e2);
 
-                        // Write CoD in it's cell
-                        correlationws.Cells[row, count].Value = CalculateCoeffiecientOfDetermination(e1, e2).ToString();
+                        correlationws.Cells[row, count + 2].Value = CoD;
+
+                        if (CoD >= this.Threshold)
+                        {
+                            correlationws.Cells[row, count + 2].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                            correlationws.Cells[row, count + 2].Style.Fill.BackgroundColor.SetColor(Color.Green);
+                        }
 
                         count++;
                     }
@@ -94,7 +102,11 @@ namespace WaterAnalysisTool.Analyzer
                     index++;
                     row++;
                 }
+
+                matrixIndex++;
             }
+
+            this.DataWorkbook.Save();
         }
 
         public void AddElements(List<List<Element>> elements)
@@ -110,7 +122,7 @@ namespace WaterAnalysisTool.Analyzer
 
                 foreach(Element e in els)
                 {
-                    elementList.Add((Element)e.Clone());
+                    elementList.Add((Element) e.Clone());
                 }
 
                 sampleGroup.Add(elementList);

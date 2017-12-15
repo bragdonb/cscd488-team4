@@ -110,7 +110,7 @@ namespace WaterAnalysisTool.Analyzer
 
                 for (int y = 0; this.dataws.Cells[this.row, this.col].Value != null; y++)
                 {
-                    /*TODO Testing*/ Console.WriteLine("Trying to parse: " + this.dataws.Cells[this.row, this.col].Value.ToString() + "   " + "\tfor element: " + this.elementNames[x] + "\tx = " + x + "\ty = " + y);
+                    /*TODO Testing Console.WriteLine("Trying to parse: " + this.dataws.Cells[this.row, this.col].Value.ToString() + "   " + "\tfor element: " + this.elementNames[x] + "\tx = " + x + "\ty = " + y);*/
                     analytes.Add(new Element(this.elementNames[x], "", Double.Parse(this.dataws.Cells[this.row, this.col].Value.ToString()), 0.0, 0.0));
                     this.row++;
                     if (firstRun)
@@ -122,7 +122,7 @@ namespace WaterAnalysisTool.Analyzer
 
                 // need to add to the list that represents the sample list then clear the list for re-use, otherwise elements just get added to the same list
                 this.elements.Add(analytes);
-                //analytes.Clear(); // I lied don't clear it doesn't make a deep copy
+                //analytes.Clear(); // I lied don't clear
             }
 
             this.row += colLength;//at blank space after first samplegroup

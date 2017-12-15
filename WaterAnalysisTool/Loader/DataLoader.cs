@@ -288,7 +288,7 @@ namespace WaterAnalysisTool.Loader
                                     else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
                                     {
                                         dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Black);
-                                        dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Firebrick);
+                                        dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(Color.Firebrick);
                                         flag = true;
                                     }
 
