@@ -39,6 +39,143 @@ namespace WaterAnalysisTool
                     if (stringArgs.ToLower().Equals("usage"))
                         Console.WriteLine("parse <location/name of input> <location/name for output>\nanalyze <location/name of input> <r^2 threshold>");
 
+                    #region Testing
+                    else if (stringArgs.ToLower().Equals("test loader"))
+                    {
+                         SampleGroup CalibrationSamples;
+                        SampleGroup CalibrationStandards;
+                        SampleGroup QualityControlSamples;
+                        SampleGroup CertifiedValueSamples_1;
+                        SampleGroup CertifiedValueSamples_2;
+                        SampleGroup Samples_1;
+                        SampleGroup Samples_2;
+
+                        Sample s = null;
+                        List<Sample> list = new List<Sample>();
+
+                        Random random = new Random();
+
+                        FileInfo fi = new FileInfo(@"tester.xlsx");
+                        if (fi.Exists)
+                            fi.Delete();
+
+                        using (var p = new ExcelPackage(new FileInfo(@"tester.xlsx")))
+                        {     
+                            p.Workbook.Properties.Title = "Title of Workbook";
+                            p.Workbook.Worksheets.Add("Data");
+                            p.Workbook.Worksheets.Add("Calibration Standards");
+                            p.Workbook.Worksheets.Add("Graphs");
+
+
+                            DataLoader loader = new DataLoader(null, p);
+
+                            #region Sample & Sample Group Creation
+                            for(int i = 0; i < 10; i++)
+                            {
+                                s = new Sample("Method Name", "Calibration Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                                for(int j = 0; j < 10; j++)
+                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                                list.Add(s);
+                            }
+
+                            CalibrationSamples = new SampleGroup(list, "CalibrationSamples", false);
+                            list.Clear();
+
+                            for (int i = 0; i < 10; i++)
+                            {
+                                s = new Sample("Method Name", "Calibration Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                                for(int j = 0; j < 10; j++)
+                                s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                                list.Add(s);
+                            }
+
+                            CalibrationStandards = new SampleGroup(list, "CalibrationSamples", false);
+                            list.Clear();
+
+                            for (int i = 0; i < 10; i++)
+                            {
+                                s = new Sample("Method Name", "Quality Control Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                                for (int j = 0; j < 10; j++)
+                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                                list.Add(s);
+
+                            }
+
+                            QualityControlSamples = new SampleGroup(list, "QualityControlSamples", true);
+                            list.Clear();
+
+                            for(int i = 0; i < 10; i++)
+                            {
+                                s = new Sample("Method Name", "Certified Value (1) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                                for (int j = 0; j < 10; j++)
+                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                                list.Add(s);
+                            }
+
+                            CertifiedValueSamples_1 = new SampleGroup(list, "CertifiedValueSamples_1", true);
+                            list.Clear();
+
+                            for(int i = 0; i < 10; i++)
+                            {
+                                s = new Sample("Method Name", "Certified Value (2) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                                for (int j = 0; j < 10; j++)
+                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                                list.Add(s);
+                            }
+
+                            CertifiedValueSamples_2 = new SampleGroup(list, "CertifiedValueSamples_2", true);
+                            list.Clear();
+
+                            for(int i = 0; i < 10; i++)
+                            {
+                                s = new Sample("Method Name", "Generic (1) Sample #" + i, DateTime.Now.ToString(), "Unk", 3);
+
+                                for (int j = 0; j < 10; j++)
+                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                                list.Add(s);
+                            }
+
+                            Samples_1 = new SampleGroup(list, "Samples_1", false);
+                            list.Clear();
+
+                            for(int i = 0; i < 10; i++)
+                            {
+                                s = new Sample("Method Name", "Generic (2) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
+
+                                for (int j = 0; j < 10; j++)
+                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                                list.Add(s);
+                            }
+
+                            Samples_2 = new SampleGroup(list, "Samples_2", false);
+                            list.Clear();
+
+                            loader.AddCalibrationSampleGroup(CalibrationSamples);
+                            loader.AddCalibrationStandard(CalibrationStandards);
+                            loader.AddQualityControlSampleGroup(QualityControlSamples);
+                            loader.AddCertifiedValueSampleGroup(CertifiedValueSamples_1);
+                            loader.AddCertifiedValueSampleGroup(CertifiedValueSamples_2);
+                            loader.AddSampleGroup(Samples_1);
+                            loader.AddSampleGroup(Samples_2);
+                            #endregion
+
+                            loader.Load(); // Load calls Parse, don't need to in main; also saves the workbook
+                        }
+                    }
+                    #endregion
+
                     else
                     {
                         Regex r = new Regex("[^\\s\"']+|\"([^\"]*)\"|'([^']*)'");

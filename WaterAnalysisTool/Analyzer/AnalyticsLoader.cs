@@ -35,6 +35,7 @@ namespace WaterAnalysisTool.Analyzer
             int index = 0;
             int row = 1;
             int col = 1;
+            int columnCount = 0;
             int matrixIndex = 0;
             Double CoD; // Coefficient of Determination or r squared
             List<Element> e2 = null;
@@ -57,23 +58,34 @@ namespace WaterAnalysisTool.Analyzer
                 row++;
                 col = 1;
                 count = 0;
+                columnCount = 0;
 
+                // Columns
                 while(count < Elements[i].Count)
                 {
                     col++;
                     correlationws.Cells[row, col].Value = Elements[i][count][i].Name;
                     correlationws.Cells[row, col].Style.Font.Bold = true;
                     count++;
+                    columnCount++;
                 }
 
                 col = 1;
                 count = 0;
 
+                // Rows
                 while(count < Elements[i].Count)
                 {
                     row++;
                     correlationws.Cells[row, col].Value = Elements[i][count][i].Name;
                     correlationws.Cells[row, col].Style.Font.Bold = true;
+
+                    if (row % 2 != 0)
+                    {
+                        correlationws.Cells[row, 1, row, columnCount + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                        correlationws.Cells[row, 1, row, columnCount + 1].Style.Fill.BackgroundColor.SetColor(Color.LightGray);
+                    }
+
                     count++;
                 }
 
