@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using OfficeOpenXml;
 using WaterAnalysisTool.Components;
 
 namespace WaterAnalysisTool.Loader
@@ -9,63 +8,179 @@ namespace WaterAnalysisTool.Loader
 
     class DataLoaderParser
     {
+
+
+
         /* Attributes */
+
+
 
         private DataLoader Loader;
         private StreamReader Input;
-        private List<Sample> CalibrationSamples;        // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC - These will not always have the same number of elements(analytes) in the input text file
-        private List<Sample> CalibrationStandards;     // Calibration Standard -> Sample Type: Cal
-        private List<Sample> QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC
-        
-        // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC - These will not always have the same number of elements(analytes) in the input text file
-        private List<SampleGroup> CertifiedValueSamples; // The names of the different groupings of Certified Values can be anything and there can be any number of different names
-        private List<SampleGroup> Samples;
+
+        private List<Sample> CalibrationStandardsList;
+        private List<Sample> CalibrationSamplesList;
+        private List<Sample> QualityControlSamplesList;
+
+        private List<List<Sample>> CertifiedValueList;
+        private List<List<Sample>> SampleList;
+
+        private SampleGroup CalibrationStandards;     // Calibration Standard -> Sample Type: Cal, --- These go in the Calibration Standards worksheet.  Calib Blank, CalibStd
+        private SampleGroup CalibrationSamples;        // Quality Control Solutions -> Sample Type: QC --- These are usually named Instrument Blank
+        private SampleGroup QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC --- These will have CCV in the name
+
+        // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC or Unk --- The analytes (elements) found under Check Standards in the xlsx file will not always match up with the analytes of the Certified Value samples
+        private List<SampleGroup> CertifiedValueSampleGroups; // The names of the various Certified Values are not guaranteed to be SoilB/TMDW/etc. --- These will have wildly different names with each run
+        private List<SampleGroup> SampleSampleGroups; // Samples -> Sample Type: Unk --- These will have very different names (Perry/DFW/etc.)
+
+        private List<string> CertifiedValueNamesFromCheckStandards;
 
 
 
         /* Constructors */
 
+
+
         public DataLoaderParser (DataLoader loader, StreamReader inf)
         {
             this.Loader = loader;
             this.Input = inf;
-            this.CalibrationSamples = new List<Sample>();
-            this.CalibrationStandards = new List<Sample>();
-            this.QualityControlSamples = new List<Sample>();
 
-            this.CertifiedValueSamples = new List<SampleGroup>();
-            this.Samples = new List<SampleGroup>();
+            this.CalibrationStandardsList = new List<Sample>();
+            this.CalibrationSamplesList = new List<Sample>();
+            this.QualityControlSamplesList = new List<Sample>();
+
+            this.CertifiedValueList = new List<List<Sample>>();
+            this.SampleList = new List<List<Sample>>();
+
+            this.CertifiedValueSampleGroups = new List<SampleGroup>();
+            this.SampleSampleGroups = new List<SampleGroup>();
         }
 
 
 
         /* Public Methods */
 
+
+
         public void Parse ()
         {
-            // TODO
-            // Parse performs the following functions
-            // 1. Read each sample from the input stream
-            //  1.1 Create Sample
-            //  1.2 Add elements to the sample
-            //  1.3 Add the sample to the correct list (using Loader.Add<SampleType> see comments in DataLoader by each list)
+            Sample samp = null;
+
+            this.ParseCheckStandards(); // Still need to parse CheckStandards file
 
             this.Input.ReadLine(); // Consumes the first line of the file that is always empty
 
             while (this.Input.Peek() >= 0)
             {
-                this.ParseHeader();
+                samp = this.ParseHeader();
+                this.ParseResults(samp);
+                this.ParseInternalStandards(samp);
             }
+
+            if (samp != null)
+            {
+                if (String.Compare(samp.SampleType, "Cal") == 0)
+                    this.CalibrationStandardsList.Add(samp);
+                else if (samp.Name.StartsWith("CCV"))
+                    this.QualityControlSamplesList.Add(samp);
+                else if (String.Compare(samp.Name, "Instrument Blank") == 0)
+                    this.CalibrationSamplesList.Add(samp); // Assuming all Calibration Samples will be name "Instrument Blank" at this point
+                else if (String.Compare(samp.SampleType, "QC") == 0)
+                {
+                    foreach (List<Sample> sampleList in this.CertifiedValueList)
+                    {
+                        foreach (Sample sample in sampleList)
+                        {
+                            if (String.Compare(sample.Name, samp.Name) == 0) // This condition is not entirely correct
+                            {
+                                // Add samp to list
+                            }
+                            else
+                            {
+                                // 1. Create new Sample
+                                // 2. Add Sample to List<Sample>
+                                // 3. Add List<Sample> to List<List<Sample>>
+                            }
+                        }
+                    }
+                }
+                else if (String.Compare(samp.SampleType, "Unk") == 0)
+                {
+                    foreach (List<Sample> sampleList in this.SampleList)
+                    {
+                        foreach (Sample sample in sampleList)
+                        {
+                            if (String.Compare(sample.Name, samp.Name) == 0) // This condition is not entirely correct
+                            {
+                                // Add samp to list
+                            }
+                            else
+                            {
+                                // 1. Create new Sample
+                                // 2. Add Sample to List<Sample>
+                                // 3. Add List<Sample> to List<List<Sample>>
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Create SampleGroups here && hand them off to DataLoader
+
         }
 
 
 
         /* Private Methods */
 
-        private void CreateCertifiedValueLists () // May not need
+
+
+        // Methods for creating SampleGroups
+
+
+
+        private SampleGroup CreateSampleGroup (List<Sample> sampleList, String name, bool skipFirst)
         {
-            // Read Certified Value names from a separate file and create SampleGroups (TMDW, Soil B, CCV (Continuous Calibration Verification)) to be added to the List<SampleGroup> CertifiedValueSampleGroups
+            // TODO More error checking?
+
+            if (sampleList == null || name == null)
+                throw new ArgumentException("The SampleGroup you are trying to create will contain a null member variable\n");
+
+            return new SampleGroup(sampleList, name, skipFirst);
         }
+
+
+
+        // Methods for creating Elements and adding them to a sample
+
+
+
+        private Element CreateElement (String name, String units, Double avg, Double stddev, Double rsd)
+        {
+            // TODO More error checking?
+
+            if (name == null || units == null)
+                throw new ArgumentNullException("The element you are trying to instantiate will contain a null member variable\n");
+
+            return new Element(name, units, avg, stddev, rsd);
+        }
+
+
+
+        private void AddElementToSample (Sample sample, Element element)
+        {
+            if (sample == null)
+                throw new ArgumentException("The sample you are attempting to add an element to is null\n");
+            else if (element == null)
+                throw new ArgumentNullException("The element you are attempting to add to the sample is null\n");
+
+            sample.Elements.Add(element);
+        }
+
+
+
+        // Methods for creating a sample and adding it to the correct SampleGroup
 
 
 
@@ -81,92 +196,11 @@ namespace WaterAnalysisTool.Loader
 
 
 
-        private void AddSample(SampleGroup sample)
-        {
-            if (sample == null)
-                throw new ArgumentNullException("The sample being added to the List<T> Samples is null\n");
-
-            this.Samples.Add(sample);
-        }
+        // Parse() helper methods
 
 
 
-        private void AddCalibrationsSample(Sample sample)
-        {
-            if (sample == null)
-                throw new ArgumentNullException("The sample being added to the List<T> CalibrationSamples is null\n");
-
-            this.CalibrationSamples.Add(sample);
-        }
-
-
-
-        private void AddCalibrationsStandard(Sample sample)
-        {
-            if (sample == null)
-                throw new ArgumentNullException("The sample being added to the List<T> CalibrationsStandards is null\n");
-
-            this.CalibrationStandards.Add(sample);
-        }
-
-
-
-        private void AddQualityControlSample(Sample sample)
-        {
-            if (sample != null)
-                throw new ArgumentNullException("The sample being added to the List<T> QualityControlSamples is null\n");
-
-            this.QualityControlSamples.Add(sample);
-        }
-
-
-
-        private void AddCertifiedValueSample(SampleGroup sample)
-        {
-            if (sample != null)
-                throw new ArgumentNullException("The sample being added to the List<T> CertifiedValueSamples is null\n");
-
-            this.CertifiedValueSamples.Add(sample);
-        }
-
-
-
-        private void PassSampleGroupsToDataLoader()
-        {
-            
-            //for ()
-            //{
-                // this.Loader.AddSampleGroup(new SampleGroup(this.Samples, NAME HERE));
-            //}
-
-            // this.Loader.AddCalibrationSampleGroup(new SampleGroup(this.CalibrationSamples, NAME HERE));
-            // this.Loader.AddCalibrationStandard(new SampleGroup(this.CalibrationsStandards, NAME HERE));
-            // this.Loader.AddQualityControlSampleGroup(new SampleGroup(this.QualityControlSamples, NAME HERE));
-
-            //for ()
-            //{
-                // this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(this.CertifiedValueSamples, NAME HERE));
-            //}
-        }
-
-
-
-        private Element CreateElement (String line)
-        {
-            // TODO
-            return null;
-        }
-
-
-
-        private void AddElementToSample ()
-        {
-
-        }
-
-
-
-        private void ParseHeader ()
+        private Sample ParseHeader ()
         {
             Sample sample;
 
@@ -183,21 +217,19 @@ namespace WaterAnalysisTool.Loader
                         stringList.Add(this.Input.ReadLine());
                     }
 
-                    sample = this.CreateSample(stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // At this point I'm including the Comment member variable (Sample) whether it is blank in the input file or not
+                    // String Trimming
+                    stringList[1].Replace("SampleName=", "");
+                    stringList[7] = stringList[7].Substring(stringList[7].IndexOf(" ", 4)); // Getting the correct format for the time
+                    stringList[8].Replace("Sample Type=", "");
+                    stringList[11].Replace("Repeats=", "");
 
-                    // Add sample to correct list here
-                    // Before adding:
-                        // 1. Check the sampleType
-                        // 2. If the sampleType is CertifiedValueSample or Sample check the name of the sample and add to the correct SampleGroup
+                    sample = this.CreateSample(stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11]));
 
-                    // this.ParseResults(sample);
-
-                    //switch (sample) // Probably need getter for sampleType
-                    //{
-                        // Add sample to the correct sample list depending on sampleType
-                    //}
+                    return sample;
                 }
             }
+
+            return null;
         }
 
 
@@ -209,12 +241,16 @@ namespace WaterAnalysisTool.Loader
 
 
 
-        private void ParseInternalStandards ()
+        private void ParseInternalStandards (Sample sample)
         {
 
         }
 
 
 
+        private void ParseCheckStandards()
+        {
+
+        }
     }
 }
