@@ -41,12 +41,17 @@ namespace WaterAnalysisTool
 
                     else
                     {
-                        Regex r = new Regex(@"("".*?"")|(\S+)");
+                        Regex r = new Regex("[^\\s\"']+|\"([^\"]*)\"|'([^']*)'");
                         MatchCollection arguments = r.Matches(stringArgs);
-
+                        
                         if (arguments.Count > 1)
-                            infile = new FileInfo(@arguments[1].Value);
-
+                        {
+                            String file = arguments[1].Value.Replace("\"", "").Replace  ("\'", ""); //get rid of quotes
+                            if (!file.Contains("."))//if it has no extension, add ".xlsx"
+                                file = file + ".xlsx";
+                            infile = new FileInfo(file);
+                        }
+                         
                         if (infile.Exists)
                         {
                             if (arguments[0].Value.ToLower().Equals("parse"))
