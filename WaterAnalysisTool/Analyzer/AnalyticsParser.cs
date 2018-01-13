@@ -35,7 +35,7 @@ namespace WaterAnalysisTool.Analyzer
         public void Parse()
         {
             if (this.dataWorkbook.File.Length < 4 || !this.dataWorkbook.File.Exists)
-                throw new ParseErrorException("Data Workbook does not exist or does not have correct contents.");
+                throw new ParseErrorException("Data Workbook does not exist or does not have correct worksheets.");
 
             this.row = 7;
             this.col = 3;

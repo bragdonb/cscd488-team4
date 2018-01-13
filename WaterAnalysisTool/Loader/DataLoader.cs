@@ -61,7 +61,7 @@ namespace WaterAnalysisTool.Loader
             #endregion
 
             DataLoaderParser parser = new DataLoaderParser(this, Input);
-            parser.Parse();
+            //parser.Parse(); // TODO uncomment me
 
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
@@ -559,25 +559,104 @@ namespace WaterAnalysisTool.Loader
 
             // TODO Create the calibration curve graph
             // 1. Open the CheckStandards.xlsx sheet where the stock solution concentrations can be found and read them in
-            //  1.1 Have to worry about not every concentration in the standards list
+            //  1.1 Have to worry about not every concentration in the standards list (these will have to be 0's in the .xlsx)
             // 2. Create a graph with the measured counts per second in the standards list over their respective stock solution concentration
             try
             {
                 FileInfo fi = new FileInfo("CheckStandards.xlsx");
                 if (!fi.Exists)
-                    throw new FileNotFoundException("Error: The CheckStandards.xlsx config file does not exist or could not be found and a calibration curve could not be generated.");
+                    throw new FileNotFoundException("The CheckStandards.xlsx config file does not exist or could not be found and a calibration curve could not be generated.");
 
                 using (var p = new ExcelPackage(fi))
                 {
                     ExcelWorksheet standardsws = p.Workbook.Worksheets[2]; // TODO this index may change depending on if the CheckStandards.xlxs file changing
+                
+                    // Find Continuing Calibration Verification (CCV) seciton
+                    row = 1;
+                    int blankCount = 0;
+                    while(blankCount < 5 && blankCount >= 0)
+                    {
+                        if(standardsws.Cells[row, 1].Value != null)
+                        {
+                            if(!standardsws.Cells[row, 1].Value.ToString().Equals("Continuing Calibration Verification (CCV)"))
+                            {
+                                 row++;
+                                 blankCount = 0;
+                            }
+
+                            else
+                                break;
+                        }
+
+                        else
+                        {
+                            blankCount++;
+                            row++;
+                        }
+                    }
+
+                    if(blankCount > 4)
+                        throw new ConfigurationErrorException("Could not find \"Continuing Calibration Verification (CCV)\" section in CheckStandards.xlsx config file.");
+
+                    row++;
+
+                    // Find the row that corresponds to the CCV ratio (QualityControlStandards) !! Don't need this if we do in fact use CCV section in CheckStandards, should check if ratios match !!
+                    // String[] QCSName = this.QualityControlSamples.Name.Split(null);
+                    // TODO check if QCSName correct length
+                    // String ratio = QCSName[1];
+
+                    //while(!standardsws.Cells[row, 1].Value.ToString().Contains(ratio))
+                    //{
+                        //row++;
+
+                        // Checking if this is an infinite loop
+                        //if(standardws.Cells[row, 1].Value == null)
+                            //throw new ConfigurationErrorException("Could not find a Check Standard in CheckStandards.xlsx that matches the CCV ratio of " + ratio + ".");
+                    //}
+
+                    // Write CCV avg to Calibration Standards worksheet for use as range? !! Don't need this if we don't use CCV section in CheckStandards, instead find on calibws !!
+                    col = 2;
+                    foreach(double avg in this.QualityControlSamples.Average)
+                    {
+                        calibws.Cells[endRow, col].Value = avg;
+                        col++;
+                    }
+
+                    endRow++;
+
+                    // Read in check standards data and write to Calibration Standards worksheet in Output package at endRow
+                    col = 2;
+                    while(standardsws.Cells[row, col + 1].Value != null)
+                    {
+                        calibws.Cells[endRow, col].Value = standardsws.Cells[row, col + 1].Value;
+                        col++;
+                    }
+
+                    // Create the chart
+                    ExcelChart calCurve = calibws.Drawings.AddChart("Calibration Curve", eChartType.XYScatter);
+                    calCurve.Title.Text = "Calibration Curve";
+                    calCurve.SetPosition(endRow + 2, 0, 1, 0);
+                    calCurve.SetSize(600, 400);
+                    calCurve.YAxis.MinValue = 0;
+                    calCurve.XAxis.MinValue = 0;
+                    calCurve.Legend.Remove();
+
+                    var yrange = calibws.Cells[endRow - 1, 2, endRow - 1, col];
+                    var xrange = calibws.Cells[endRow, 2, endRow, col];
+
+                    var series1 = calCurve.Series.Add(yrange, xrange);
+                    series1.TrendLines.Add(eTrendLine.Linear);
+                    
                 }
+
 
                 this.Messages.Add("Calibration curve generated successfully");
             }
 
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                this.Messages.Add("Calibration curve could not be generated. Error: " + e.Message);
+                //Console.WriteLine(e.Message);
             }
         }// end WriteStandards
         #endregion
