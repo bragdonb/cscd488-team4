@@ -10,8 +10,6 @@ using System.Text.RegularExpressions;
 
 namespace WaterAnalysisTool.Loader
 {
-    // TODO configure to write the header "Samples" before wiritng the generic samples portion
-    // TODO configure to only offset generic sample groups by one row
     class DataLoader
     {
         #region Attributes
@@ -61,7 +59,7 @@ namespace WaterAnalysisTool.Loader
             #endregion
 
             DataLoaderParser parser = new DataLoaderParser(this, Input);
-            //parser.Parse(); // TODO uncomment me
+            //parser.Parse(); // TODO uncomment me when the parser is done
 
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
@@ -110,10 +108,16 @@ namespace WaterAnalysisTool.Loader
                     row = WriteSamples(dataws, g, nameof(CertifiedValueSamples), row);
             }
 
+            dataws.Cells[row, 1].Value = "Samples";
+            dataws.Cells[row, 1].Style.Font.Bold = true;
+            row++;
             foreach (SampleGroup g in Samples)
             {
                 if (Samples.Count > 0)
+                {
                     row = WriteSamples(dataws, g, nameof(Samples), row);
+                    row--;
+                }
             }
 
             this.Messages.Add("Samples written to excel sheet successfully.");
@@ -557,7 +561,7 @@ namespace WaterAnalysisTool.Loader
 
             this.Messages.Add("Calibration standards written to excel sheet successfully");
 
-            // TODO Create the calibration curve graph
+            // Calibration Curve
             // 1. Open the CheckStandards.xlsx sheet where the stock solution concentrations can be found and read them in
             //  1.1 Have to worry about not every concentration in the standards list (these will have to be 0's in the .xlsx)
             // 2. Create a graph with the measured counts per second in the standards list over their respective stock solution concentration

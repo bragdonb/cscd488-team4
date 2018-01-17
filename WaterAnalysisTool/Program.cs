@@ -12,8 +12,6 @@ namespace WaterAnalysisTool
     class Program
     {
         /* The ~~real~~ main */
-        //TODO change so files can be opened without needing to type their extension
-        //TODO handle filenames with spaces (surrounded by "")
         static void Main(string[] args)
         {
             // The functionality of main:
@@ -42,7 +40,7 @@ namespace WaterAnalysisTool
                     #region Testing
                     else if (stringArgs.ToLower().Equals("test loader"))
                     {
-                         SampleGroup CalibrationSamples;
+                        SampleGroup CalibrationSamples;
                         SampleGroup CalibrationStandards;
                         SampleGroup QualityControlSamples;
                         SampleGroup CertifiedValueSamples_1;
@@ -64,7 +62,6 @@ namespace WaterAnalysisTool
                             p.Workbook.Properties.Title = "Title of Workbook";
                             p.Workbook.Worksheets.Add("Data");
                             p.Workbook.Worksheets.Add("Calibration Standards");
-                            p.Workbook.Worksheets.Add("Graphs");
 
 
                             DataLoader loader = new DataLoader(null, p);
@@ -204,7 +201,6 @@ namespace WaterAnalysisTool
                                         p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
                                         p.Workbook.Worksheets.Add("Data");
                                         p.Workbook.Worksheets.Add("Calibration Standards");
-                                        p.Workbook.Worksheets.Add("Graphs"); //maybe rename
 
                                         DataLoader loader = new DataLoader(infile.OpenText(), p);
                                         loader.Load();
@@ -233,7 +229,7 @@ namespace WaterAnalysisTool
                                 {
                                     //threshold now has correct value
                                     //Console.WriteLine("threshold is not -1, it is " + threshold);
-                                    using (ExcelPackage p = new ExcelPackage(infile))//TODO see if this works with a file that isn't an xlsx file
+                                    using (ExcelPackage p = new ExcelPackage(infile))
                                     {
                                         AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
                                         analyticsLoader.Load();
