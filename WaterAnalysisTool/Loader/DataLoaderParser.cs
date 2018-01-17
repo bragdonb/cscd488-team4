@@ -5,7 +5,6 @@ using WaterAnalysisTool.Components;
 
 namespace WaterAnalysisTool.Loader
 {
-
     class DataLoaderParser
     {
 
@@ -29,11 +28,11 @@ namespace WaterAnalysisTool.Loader
         private SampleGroup CalibrationSamples;        // Quality Control Solutions -> Sample Type: QC --- These are usually named Instrument Blank
         private SampleGroup QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC --- These will have CCV in the name
 
-        // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC or Unk --- The analytes (elements) found under Check Standards in the xlsx file will not always match up with the analytes of the Certified Value samples
-        private List<SampleGroup> CertifiedValueSampleGroups; // The names of the various Certified Values are not guaranteed to be SoilB/TMDW/etc. --- These will have wildly different names with each run
+        // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC --- The analytes (elements) found under Check Standards in the xlsx file will not always match up with the analytes of the Certified Value samples
+        private List<SampleGroup> CertifiedValueSampleGroups; // The names of the various Certified Values are not guaranteed to be SoilB/TMDW/etc. --- These can have different names with each run
         private List<SampleGroup> SampleSampleGroups; // Samples -> Sample Type: Unk --- These will have very different names (Perry/DFW/etc.)
 
-        private List<string> CertifiedValueNamesFromCheckStandards;
+        private List<Sample> CertifiedValuesCheckStandards; // The Check Standards samples are found in the .xlsx
 
 
 
@@ -67,7 +66,7 @@ namespace WaterAnalysisTool.Loader
         {
             Sample samp = null;
 
-            this.ParseCheckStandards(); // Still need to parse CheckStandards file
+            this.CertifiedValuesCheckStandards = this.ParseCheckStandards(); // Still need to parse CheckStandards file
 
             this.Input.ReadLine(); // Consumes the first line of the file that is always empty
 
@@ -94,13 +93,13 @@ namespace WaterAnalysisTool.Loader
                         {
                             if (String.Compare(sample.Name, samp.Name) == 0) // This condition is not entirely correct
                             {
-                                // Add samp to list
+                                sampleList.Add(samp);
                             }
                             else
                             {
-                                // 1. Create new Sample
-                                // 2. Add Sample to List<Sample>
-                                // 3. Add List<Sample> to List<List<Sample>>
+                                List<Sample> tempList = new List<Sample>();
+                                tempList.Add(samp);
+                                this.CertifiedValueList.Add(tempList);
                             }
                         }
                     }
@@ -113,13 +112,13 @@ namespace WaterAnalysisTool.Loader
                         {
                             if (String.Compare(sample.Name, samp.Name) == 0) // This condition is not entirely correct
                             {
-                                // Add samp to list
+                                sampleList.Add(samp);
                             }
                             else
                             {
-                                // 1. Create new Sample
-                                // 2. Add Sample to List<Sample>
-                                // 3. Add List<Sample> to List<List<Sample>>
+                                List<Sample> tempList = new List<Sample>();
+                                tempList.Add(samp);
+                                this.SampleList.Add(tempList);
                             }
                         }
                     }
@@ -248,9 +247,9 @@ namespace WaterAnalysisTool.Loader
 
 
 
-        private void ParseCheckStandards()
+        private List<Sample> ParseCheckStandards()
         {
-
+            return new List<Sample>();
         }
     }
 }
