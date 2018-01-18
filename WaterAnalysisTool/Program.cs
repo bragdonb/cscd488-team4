@@ -11,31 +11,46 @@ namespace WaterAnalysisTool
 {
     class Program
     {
-        /* The ~~real~~ main */
+        public const double threshold = 0.7;
+        public const double version = 1.0;
+
+        // TODO pretty sure if no file extension is added to the output file argument for the parse command things will break. Need to test once parser is done.
+        // TODO there is some duplicate code in the Parse and Analyze Command regions for checking if the user wants to continue with an overwrite operation. Look into reducing.
         static void Main(string[] args)
         {
             // The functionality of main:
             // 1. Awaits input in from user
             //  1.1. Accepts a command to parse the ICP-AES file (parse <location/name of input> <location/name for output>)
             //      1.1.1. Create a new ExcelPackage
-            //      1.1.2. Create each necessary worksheet in the package (Data, Calibration Standards, Graphs)
-            //      1.1.3. Set the title in the packages properties to the name of the output file (sans the extension)
-            //      1.1.4. Create a new DataLoader and call its load function
+            //      1.1.2. Set the title in the packages properties to the name of the output file (sans the extension)
+            //      1.1.3. Create a new DataLoader and call its load function
             //  1.2. Accepts a command to create correlation matrices (analyze <location/name of input> <r^2 threshold>)
 
+            FileInfo infile = null, outfile = null; ;
+            Double r2val;
+            bool flag;
+
             String stringArgs = null;
-            FileInfo infile = null, outfile;
-            Double r2val, threshold;
+            Regex r = new Regex("[^\\s\"']+|\"([^\"]*)\"|'([^']*)'");
+            MatchCollection arguments = null;
+
+            // Startup Message
+            Console.WriteLine("ICP-AES Text File Parser version " + version + ".\nType \"usage\" for a list of commands.\n");
 
             do
             {
                 try
                 {
+                    // Reseting
+                    flag = false;
+                    stringArgs = null;
+                    arguments = null;
+
                     Console.Write("Enter command: ");
                     stringArgs = Console.ReadLine();
 
                     if (stringArgs.ToLower().Equals("usage"))
-                        Console.WriteLine("parse <location/name of input> <location/name for output>\nanalyze <location/name of input> <r^2 threshold>");
+                        Console.WriteLine("\tparse <location/name of input> <location/name for output>\n\tanalyze <location/name of input> <r^2 threshold>\n\tType \"exit\" to exit.");
 
                     #region Testing
                     else if (stringArgs.ToLower().Equals("test loader"))
@@ -175,82 +190,182 @@ namespace WaterAnalysisTool
 
                     else
                     {
-                        Regex r = new Regex("[^\\s\"']+|\"([^\"]*)\"|'([^']*)'");
-                        MatchCollection arguments = r.Matches(stringArgs);
-                        
+                        // Check if stringArgs matches expected command structure
+                        arguments = r.Matches(stringArgs);
+
                         if (arguments.Count > 1)
                         {
-                            String file = arguments[1].Value.Replace("\"", "").Replace  ("\'", ""); //get rid of quotes
-                            if (!file.Contains("."))//if it has no extension, add ".xlsx"
-                                file = file + ".xlsx";
-                            infile = new FileInfo(file);
-                        }
-                         
-                        if (infile.Exists)
-                        {
+                            #region Parse Command
                             if (arguments[0].Value.ToLower().Equals("parse"))
                             {
-                                if (arguments.Count > 2)
-                                {
-                                    outfile = new FileInfo(@arguments[2].Value);
-                                    if (outfile.Exists)
-                                        outfile.Delete();
+                                String file = arguments[1].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
+                                if (!file.Contains(".")) // If it has no extension, add ".txt"
+                                    file = file + ".txt";
+                                infile = new FileInfo(file);
 
-                                    using (ExcelPackage p = new ExcelPackage(new FileInfo(@arguments[2].Value)))
+                                if (infile.Exists)
+                                { 
+                                    if (arguments.Count > 2)
                                     {
-                                        p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
-                                        p.Workbook.Worksheets.Add("Data");
-                                        p.Workbook.Worksheets.Add("Calibration Standards");
+                                        outfile = new FileInfo(@arguments[2].Value);
+                                        if (outfile.Exists)
+                                        {
+                                            Console.WriteLine("\tA file of the name " + outfile.Name + " already exists at " + (outfile.ToString().Substring(0, outfile.Name.Length)) + ".");
+                                            Console.Write("\tThis operation will overwrite this file. Continue? (y/n): ");
 
-                                        DataLoader loader = new DataLoader(infile.OpenText(), p);
-                                        loader.Load();
+                                            if (Console.ReadLine().ToLower().Equals("n"))
+                                            {
+                                                Console.WriteLine("\tParse operation cancelled.");
+                                            }
+
+                                            else
+                                            {
+                                                outfile.Delete();
+
+                                                using (ExcelPackage p = new ExcelPackage(new FileInfo(@arguments[2].Value)))
+                                                {
+                                                    p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
+
+                                                    DataLoader loader = new DataLoader(infile.OpenText(), p);
+                                                    loader.Load();
+                                                }
+                                            }
+                                        }
+
+                                        else
+                                        {
+                                            using (ExcelPackage p = new ExcelPackage(new FileInfo(@arguments[2].Value)))
+                                            {
+                                                p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
+
+                                                DataLoader loader = new DataLoader(infile.OpenText(), p);
+                                                loader.Load();
+                                            }
+                                        }
                                     }
                                 }
-                            }
 
+                                else
+                                    Console.WriteLine("\tCould not locate " + infile.ToString());
+                            }
+                            #endregion
+
+                            #region Analyze Command
                             else if (arguments[0].Value.ToLower().Equals("analyze"))
                             {
-                                threshold = 0.7;
-                                if (arguments.Count > 2)
+                                String file = arguments[1].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
+                                if (!file.Contains(".")) // If it has no extension, add ".xlsx"
+                                    file = file + ".xlsx";
+                                infile = new FileInfo(file);
+
+                                if (infile.Exists)
                                 {
-                                    if (Double.TryParse(arguments[2].Value, out r2val))
+                                    if (arguments.Count > 2)
                                     {
-                                        if (r2val <= 1 && r2val >= 0)
-                                            threshold = r2val;
+                                        // Optional threshold argument entered
+                                        if (Double.TryParse(arguments[2].Value, out r2val))
+                                        {
+                                            if (r2val >= 0.0 && r2val <= 1)
+                                            {
+                                                using (ExcelPackage p = new ExcelPackage(infile))
+                                                {
+                                                    foreach (ExcelWorksheet sheet in p.Workbook.Worksheets)
+                                                    {
+                                                        // Check if correlation worksheet already exists
+                                                        if(sheet.Name.Equals("Correlation"))
+                                                        {
+                                                            Console.WriteLine("\tA correlation worksheet already exists for this file.");
+                                                            Console.Write("\tThis operation will overwrite it. Continue? (y/n): ");
+
+                                                            if (Console.ReadLine().ToLower().Equals("n"))
+                                                            {
+                                                                Console.WriteLine("\tAnalyze operation cancelled.");
+                                                                flag = true;
+                                                                break;
+                                                            }
+
+                                                            else
+                                                            {
+                                                                p.Workbook.Worksheets.Delete(sheet);
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if (!flag)
+                                                    {
+                                                        AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
+                                                        analyticsLoader.Load();
+                                                    }
+                                                }
+                                            }
+
+                                            else
+                                                Console.WriteLine("\t" + arguments[2] + " is an invalid threshold. Threshold must be a value between 0 and 1 inclusive.");
+                                        }
+
                                         else
-                                            threshold = -1;
+                                            Console.WriteLine("\t" + arguments[2] + " is an invalid threshold. Threshold must be numeric and a value between 0 and 1 inclusive.");
                                     }
 
                                     else
-                                        threshold = -1;
-                                }
-
-                                if (threshold != -1)
-                                {
-                                    //threshold now has correct value
-                                    //Console.WriteLine("threshold is not -1, it is " + threshold);
-                                    using (ExcelPackage p = new ExcelPackage(infile))
                                     {
-                                        AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
-                                        analyticsLoader.Load();
+                                        using (ExcelPackage p = new ExcelPackage(infile))
+                                        {
+                                            foreach (ExcelWorksheet sheet in p.Workbook.Worksheets)
+                                            {
+                                                // Check if correlation worksheet already exists
+                                                if (sheet.Name.Equals("Correlation"))
+                                                {
+                                                    Console.WriteLine("\tA correlation worksheet already exists for this file.");
+                                                    Console.Write("\tThis operation will overwrite it. Continue? (y/n): ");
+
+                                                    if (Console.ReadLine().ToLower().Equals("n"))
+                                                    {
+                                                        Console.WriteLine("\tAnalyze operation cancelled.");
+                                                        flag = true;
+                                                        break;
+                                                    }
+
+                                                    else
+                                                    {
+                                                        p.Workbook.Worksheets.Delete(sheet);
+                                                        break;
+                                                    }
+                                                }
+                                            }
+
+                                            if (!flag)
+                                            {
+                                                AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
+                                                analyticsLoader.Load();
+                                            }
+                                        }
                                     }
                                 }
-                            }
 
-                        }//end if(infile.Exists)
+                                else
+                                    Console.WriteLine("\tCould not locate " + infile.ToString());
+                            }
+                            #endregion
+
+                            else
+                                Console.WriteLine("\t" + stringArgs + " is an invalid command. For a list of valid commands enter \"usage\".");
+                        }
 
                         else
-                        {
-                            Console.WriteLine("Input file does not exist.");
-                        }
+                            Console.WriteLine("\t" + stringArgs + " is an invalid command. For a list of valid commands enter \"usage\".");
                     }
                 }
 
-                catch(Exception e)//TODO make these messages more specific so that she knows exactly what went wrong
+                // Ideally, we would never get here...
+                catch(Exception e)
                 {
-                    Console.WriteLine(e.GetType() + " " + e.Message) ;
+                    Console.WriteLine("\t" + e.Message);
+                    //Console.WriteLine(e.GetType() + " " + e.Message);
                 }
 
+                Console.WriteLine(); // Some formatting
             } while (!stringArgs.ToLower().Equals("exit"));
 
             Console.WriteLine("Exiting...");

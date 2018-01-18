@@ -47,7 +47,7 @@ namespace WaterAnalysisTool.Analyzer
                 throw new ParseErrorException("Problem parsing input Excel workbook. No Sample groups found.");
 
             this.DataWorkbook.Workbook.Worksheets.Add("Correlation");
-            var correlationws = this.DataWorkbook.Workbook.Worksheets[this.DataWorkbook.Workbook.Worksheets.Count]; // should be the last workbook
+            var correlationws = this.DataWorkbook.Workbook.Worksheets[this.DataWorkbook.Workbook.Worksheets.Count]; // Should be the last workbook
 
             // Write outline for correlation matrices
             for(int i = 0; i < Elements.Count; i++)

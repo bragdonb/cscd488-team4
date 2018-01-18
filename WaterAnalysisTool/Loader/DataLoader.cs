@@ -29,6 +29,8 @@ namespace WaterAnalysisTool.Loader
         {
             this.Input = inf;
             this.Output = outf;
+            this.Output.Workbook.Worksheets.Add("Data");
+            this.Output.Workbook.Worksheets.Add("Calibration Standards");
 
             this.CertifiedValueSamples = new List<SampleGroup>();
             this.Samples = new List<SampleGroup>();
