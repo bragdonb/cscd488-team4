@@ -19,7 +19,6 @@ namespace WaterAnalysisTool.Loader
         private List<Sample> CalibrationSamplesList;  // Quality Control Solutions -> Sample Type: QC --- These are usually named Instrument Blank
         private List<Sample> QualityControlSamplesList;  // Stated Values (CCV) -> Sample Type: QC --- These will have CCV in the name
         private List<Sample> SampleList; // Samples -> Sample Type: Unk --- These will have very different names (Perry/DFW/etc.)
-
         private List<List<Sample>> CertifiedValueList;  // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC --- The analytes (elements) found under Check Standards in the xlsx file will not always match up with the analytes of the Certified Value samples
                                                         // The names of the various Certified Values are not guaranteed to be SoilB/TMDW/etc. --- These can have different names with each run
 
@@ -36,7 +35,6 @@ namespace WaterAnalysisTool.Loader
             this.CalibrationSamplesList = new List<Sample>(); // Instrument Blank
             this.QualityControlSamplesList = new List<Sample>(); // CCV
             this.SampleList = new List<Sample>();
-
             this.CertifiedValueList = new List<List<Sample>>();
         }
 
@@ -55,6 +53,48 @@ namespace WaterAnalysisTool.Loader
                 this.ParseInternalStandards(samp);
             }
 
+            this.AddSampleToList(samp);
+            this.PassToDataLoader();
+        }
+
+
+        /* Private Methods */
+
+
+        private SampleGroup CreateSampleGroup (List<Sample> sampleList, string name, bool skipFirst)
+        {
+            if (sampleList == null || name == null)
+                throw new ArgumentException("The SampleGroup you are trying to create will contain a null member variable\n");
+
+            return new SampleGroup(sampleList, name, skipFirst);
+        }
+
+
+        private void PassToDataLoader ()
+        {
+            foreach (List<Sample> sampleList in this.CertifiedValueList)
+            {
+                this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(sampleList, "Certified Values", true));
+            }
+
+            this.Loader.AddCalibrationStandard(this.CreateSampleGroup(this.CalibrationStandardsList, "Calibration Standards", false)); // CalibStd
+            this.Loader.AddCalibrationSampleGroup(this.CreateSampleGroup(this.CalibrationSamplesList, "Quality Control Solutions", false)); // Instrument Blank
+            this.Loader.AddQualityControlSampleGroup(this.CreateSampleGroup(this.QualityControlSamplesList, "Stated Value", true)); // CCV
+            this.Loader.AddSampleGroup(this.CreateSampleGroup(this.SampleList, "Samples", false));
+        }
+
+
+        private Sample CreateSample (string name, string comment, string runTime, string sampleType, Int32 repeats)
+        {
+            if (name == null || comment == null || runTime == null || sampleType == null || repeats > -1)
+                throw new ArgumentNullException("The sample you are trying to create will contain a null member variable\n");
+
+            return new Sample(name, comment, runTime, sampleType, repeats);
+        }
+
+
+        private void AddSampleToList (Sample samp)
+        {
             if (samp != null)
             {
                 if (string.Compare(samp.SampleType, "Cal") == 0)
@@ -80,41 +120,8 @@ namespace WaterAnalysisTool.Loader
                 else if (string.Compare(samp.SampleType, "Unk") == 0)
                     this.SampleList.Add(samp);
             }
-
-
-            // Hand off to DataLoader
-
-
-            foreach (List<Sample> sampleList in this.CertifiedValueList)
-            {
-                this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(sampleList, "Certified Values", true));
-            }
-
-            this.Loader.AddCalibrationStandard(this.CreateSampleGroup(this.CalibrationStandardsList, "Calibration Standards", false)); // CalibStd
-            this.Loader.AddCalibrationSampleGroup(this.CreateSampleGroup(this.CalibrationSamplesList, "Quality Control Solutions", false)); // Instrument Blank
-            this.Loader.AddQualityControlSampleGroup(this.CreateSampleGroup(this.QualityControlSamplesList, "Stated Value", true)); // CCV
-            this.Loader.AddSampleGroup(this.CreateSampleGroup(this.SampleList, "Samples", false));
-        }
-
-
-        /* Private Methods */
-
-
-        private SampleGroup CreateSampleGroup (List<Sample> sampleList, string name, bool skipFirst)
-        {
-            if (sampleList == null || name == null)
-                throw new ArgumentException("The SampleGroup you are trying to create will contain a null member variable\n");
-
-            return new SampleGroup(sampleList, name, skipFirst);
-        }
-
-
-        private Sample CreateSample(string name, string comment, string runTime, string sampleType, Int32 repeats)
-        {
-            if (name == null || comment == null || runTime == null || sampleType == null || repeats > -1)
-                throw new ArgumentNullException("The sample you are trying to create will contain a null member variable\n");
-
-            return new Sample(name, comment, runTime, sampleType, repeats);
+            else
+                throw new ArgumentNullException("The sample that was to be added to a list was null\n");
         }
 
 
