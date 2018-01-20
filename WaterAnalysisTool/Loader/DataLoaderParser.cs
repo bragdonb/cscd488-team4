@@ -8,10 +8,7 @@ namespace WaterAnalysisTool.Loader
     class DataLoaderParser
     {
 
-
-
         /* Attributes */
-
 
 
         private DataLoader Loader;
@@ -20,22 +17,20 @@ namespace WaterAnalysisTool.Loader
         private List<Sample> CalibrationStandardsList;
         private List<Sample> CalibrationSamplesList;
         private List<Sample> QualityControlSamplesList;
+        private List<Sample> SampleList;
 
         private List<List<Sample>> CertifiedValueList;
-        private List<Sample> SampleList;
 
         private SampleGroup CalibrationStandards;     // Calibration Standard -> Sample Type: Cal, --- These go in the Calibration Standards worksheet.  Calib Blank, CalibStd
         private SampleGroup CalibrationSamples;        // Quality Control Solutions -> Sample Type: QC --- These are usually named Instrument Blank
         private SampleGroup QualityControlSamples;     // Stated Values (CCV) -> Sample Type: QC --- These will have CCV in the name
-
-        // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC --- The analytes (elements) found under Check Standards in the xlsx file will not always match up with the analytes of the Certified Value samples
-        private List<SampleGroup> CertifiedValueSampleGroups; // The names of the various Certified Values are not guaranteed to be SoilB/TMDW/etc. --- These can have different names with each run
         private SampleGroup SampleSampleGroup; // Samples -> Sample Type: Unk --- These will have very different names (Perry/DFW/etc.)
 
+        // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC --- The analytes (elements) found under Check Standards in the xlsx file will not always match up with the analytes of the Certified Value samples
+        // The names of the various Certified Values are not guaranteed to be SoilB/TMDW/etc. --- These can have different names with each run
 
 
         /* Constructors */
-
 
 
         public DataLoaderParser (DataLoader loader, StreamReader inf)
@@ -43,20 +38,16 @@ namespace WaterAnalysisTool.Loader
             this.Loader = loader;
             this.Input = inf;
 
-            this.CalibrationStandardsList = new List<Sample>();
-            this.CalibrationSamplesList = new List<Sample>();
-            this.QualityControlSamplesList = new List<Sample>();
-
-            this.CertifiedValueList = new List<List<Sample>>();
+            this.CalibrationStandardsList = new List<Sample>(); // CalibStd
+            this.CalibrationSamplesList = new List<Sample>(); // Instrument Blank
+            this.QualityControlSamplesList = new List<Sample>(); // CCV
             this.SampleList = new List<Sample>();
 
-            this.CertifiedValueSampleGroups = new List<SampleGroup>();
+            this.CertifiedValueList = new List<List<Sample>>();
         }
 
 
-
         /* Public Methods */
-
 
 
         public void Parse ()
@@ -105,8 +96,6 @@ namespace WaterAnalysisTool.Loader
             this.QualityControlSamples = this.CreateSampleGroup(this.QualityControlSamplesList,"Stated Value", true); // CCV
             this.SampleSampleGroup = this.CreateSampleGroup(this.SampleList, "Samples", false);
 
-            // Still need to create Certified Values and Samples samplegroup
-
             foreach (List<Sample> sampleList in this.CertifiedValueList)
             {
                 this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(sampleList, "Certified Values", true));
@@ -119,13 +108,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-
         /* Private Methods */
-
-
-
-        // Methods for creating SampleGroups
-
 
 
         private SampleGroup CreateSampleGroup (List<Sample> sampleList, string name, bool skipFirst)
@@ -139,11 +122,6 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-
-        // Methods for creating Elements and adding them to a sample
-
-
-
         private Element CreateElement (string name, string units, Double avg, Double stddev, Double rsd)
         {
             // TODO More error checking?
@@ -153,7 +131,6 @@ namespace WaterAnalysisTool.Loader
 
             return new Element(name, units, avg, stddev, rsd);
         }
-
 
 
         private void AddElementToSample (Sample sample, Element element)
@@ -167,11 +144,6 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-
-        // Methods for creating a sample and adding it to the correct SampleGroup
-
-
-
         private Sample CreateSample(string name, string comment, string runTime, string sampleType, Int32 repeats)
         {
             // TODO More error checking?
@@ -181,11 +153,6 @@ namespace WaterAnalysisTool.Loader
 
             return new Sample(name, comment, runTime, sampleType, repeats);
         }
-
-
-
-        // Parse() helper methods
-
 
 
         private Sample ParseHeader ()
@@ -219,7 +186,6 @@ namespace WaterAnalysisTool.Loader
 
             return null;
         }
-
 
 
         private void ParseResults (Sample sample)
@@ -264,12 +230,10 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-
         private void ParseInternalStandards (Sample sample) // Not sure if this method is needed. Ask Carmen
         {
             this.CheckForNullSample(sample);
         }
-
 
 
         private void CheckForNullSample (Sample samp)
