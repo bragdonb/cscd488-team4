@@ -22,7 +22,7 @@ namespace WaterAnalysisTool.Loader
         private List<Sample> QualityControlSamplesList;
 
         private List<List<Sample>> CertifiedValueList;
-        private List<List<Sample>> SampleList;
+        private List<Sample> SampleList;
 
         private SampleGroup CalibrationStandards;     // Calibration Standard -> Sample Type: Cal, --- These go in the Calibration Standards worksheet.  Calib Blank, CalibStd
         private SampleGroup CalibrationSamples;        // Quality Control Solutions -> Sample Type: QC --- These are usually named Instrument Blank
@@ -30,7 +30,7 @@ namespace WaterAnalysisTool.Loader
 
         // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC --- The analytes (elements) found under Check Standards in the xlsx file will not always match up with the analytes of the Certified Value samples
         private List<SampleGroup> CertifiedValueSampleGroups; // The names of the various Certified Values are not guaranteed to be SoilB/TMDW/etc. --- These can have different names with each run
-        private List<SampleGroup> SampleSampleGroups; // Samples -> Sample Type: Unk --- These will have very different names (Perry/DFW/etc.)
+        private SampleGroup SampleSampleGroup; // Samples -> Sample Type: Unk --- These will have very different names (Perry/DFW/etc.)
 
 
 
@@ -48,10 +48,9 @@ namespace WaterAnalysisTool.Loader
             this.QualityControlSamplesList = new List<Sample>();
 
             this.CertifiedValueList = new List<List<Sample>>();
-            this.SampleList = new List<List<Sample>>();
+            this.SampleList = new List<Sample>();
 
             this.CertifiedValueSampleGroups = new List<SampleGroup>();
-            this.SampleSampleGroups = new List<SampleGroup>();
         }
 
 
@@ -76,49 +75,27 @@ namespace WaterAnalysisTool.Loader
             if (samp != null)
             {
                 if (string.Compare(samp.SampleType, "Cal") == 0)
-                    this.CalibrationStandardsList.Add(samp);
+                    this.CalibrationStandardsList.Add(samp); // CalibStd
                 else if (samp.Name.StartsWith("CCV"))
-                    this.QualityControlSamplesList.Add(samp);
+                    this.QualityControlSamplesList.Add(samp); // CCV
                 else if (string.Compare(samp.Name, "Instrument Blank") == 0)
                     this.CalibrationSamplesList.Add(samp); // Assuming all Calibration Samples will be name "Instrument Blank" at this point
                 else if (string.Compare(samp.SampleType, "QC") == 0)
                 {
                     foreach (List<Sample> sampleList in this.CertifiedValueList)
                     {
-                        foreach (Sample sample in sampleList)
+                        if (string.Compare(sampleList[0].Name, samp.Name) == 0) // This condition is not entirely correct
+                            sampleList.Add(samp);
+                        else
                         {
-                            if (string.Compare(sample.Name, samp.Name) == 0) // This condition is not entirely correct
-                            {
-                                sampleList.Add(samp);
-                            }
-                            else
-                            {
-                                List<Sample> tempList = new List<Sample>();
-                                tempList.Add(samp);
-                                this.CertifiedValueList.Add(tempList);
-                            }
+                            List<Sample> tempList = new List<Sample>();
+                            tempList.Add(samp);
+                            this.CertifiedValueList.Add(tempList); // Soil B, TMDW etc.
                         }
                     }
                 }
                 else if (string.Compare(samp.SampleType, "Unk") == 0)
-                {
-                    foreach (List<Sample> sampleList in this.SampleList)
-                    {
-                        foreach (Sample sample in sampleList)
-                        {
-                            if (string.Compare(sample.Name, samp.Name) == 0) // This condition is not entirely correct
-                            {
-                                sampleList.Add(samp);
-                            }
-                            else
-                            {
-                                List<Sample> tempList = new List<Sample>();
-                                tempList.Add(samp);
-                                this.SampleList.Add(tempList);
-                            }
-                        }
-                    }
-                }
+                    this.SampleList.Add(samp);
             }
 
             // Create SampleGroups here && hand them off to DataLoader
@@ -126,9 +103,19 @@ namespace WaterAnalysisTool.Loader
             this.CalibrationStandards = this.CreateSampleGroup(this.CalibrationStandardsList, "Calibration Standards", false); // CalibStd
             this.CalibrationSamples = this.CreateSampleGroup(this.CalibrationSamplesList, "Quality Control Solutions", false); // Instrument Blank
             this.QualityControlSamples = this.CreateSampleGroup(this.QualityControlSamplesList,"Stated Value", true); // CCV
+            this.SampleSampleGroup = this.CreateSampleGroup(this.SampleList, "Samples", false);
 
-            // Still need to create Certified Values and Samples
+            // Still need to create Certified Values and Samples samplegroup
 
+            foreach (List<Sample> sampleList in this.CertifiedValueList)
+            {
+                this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(sampleList, "Certified Values", true));
+            }
+
+            this.Loader.AddCalibrationStandard(this.CalibrationStandards);
+            this.Loader.AddCalibrationSampleGroup(this.CalibrationSamples);
+            this.Loader.AddQualityControlSampleGroup(this.QualityControlSamples);
+            this.Loader.AddSampleGroup(this.SampleSampleGroup);
         }
 
 
@@ -237,6 +224,8 @@ namespace WaterAnalysisTool.Loader
 
         private void ParseResults (Sample sample)
         {
+            this.CheckForNullSample(sample);
+
             if (this.Input.Peek() >= 0)
             {
                 string line = this.Input.ReadLine();
@@ -255,7 +244,19 @@ namespace WaterAnalysisTool.Loader
                     foreach (string str in stringList)
                     {
                         string[] strArray = str.Split(',');
-                        Element newElement = this.CreateElement(strArray[0], strArray[1], Convert.ToDouble(strArray[2]), Convert.ToDouble(strArray[3]), Convert.ToDouble(strArray[4]));
+
+                        double avg;
+                        double stddev;
+                        double rsd;
+
+                        if (!(double.TryParse(strArray[2], out avg)))
+                            avg = -1;
+                        if (!(double.TryParse(strArray[3], out stddev)))
+                            stddev = -1;
+                        if (!(double.TryParse(strArray[4], out rsd)))
+                            rsd = -1;
+
+                        Element newElement = this.CreateElement(strArray[0], strArray[1], avg, stddev, rsd);
                         this.AddElementToSample(sample, newElement);
                     }
                 }
@@ -264,9 +265,17 @@ namespace WaterAnalysisTool.Loader
 
 
 
-        private void ParseInternalStandards (Sample sample)
+        private void ParseInternalStandards (Sample sample) // Not sure if this method is needed. Ask Carmen
         {
-            // Not sure if this is needed
+            this.CheckForNullSample(sample);
+        }
+
+
+
+        private void CheckForNullSample (Sample samp)
+        {
+            if (samp == null)
+                throw new ArgumentNullException("The sample that was passed in is null\n");
         }
     }
 }
