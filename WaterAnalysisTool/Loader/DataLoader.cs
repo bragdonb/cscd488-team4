@@ -3,33 +3,43 @@ using System.Drawing;
 using System.IO;
 using System.Collections.Generic;
 using OfficeOpenXml;
+using OfficeOpenXml.Drawing.Chart;
 using WaterAnalysisTool.Components;
+using WaterAnalysisTool.Exceptions;
+using System.Text.RegularExpressions;
 
 namespace WaterAnalysisTool.Loader
 {
     class DataLoader
     {
-        /* Attributes */
+        #region Attributes
         private SampleGroup CalibrationSamples;             // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
         private SampleGroup CalibrationStandards;           // Calibration Standard -> Sample Type: Cal
         private SampleGroup QualityControlSamples;          // Stated Values (CCV) -> Sample Type: QC
         private List<SampleGroup> CertifiedValueSamples;    // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC
         private List<SampleGroup> Samples;                  // Generic Samples -> Sample Type: Unk
 
+        private List<String> Messages;
         private StreamReader Input;
         private ExcelPackage Output;
+        #endregion
 
-        /* Constructors */
+        #region Constructors
         public DataLoader(StreamReader inf, ExcelPackage outf)
         {
             this.Input = inf;
             this.Output = outf;
+            this.Output.Workbook.Worksheets.Add("Data");
+            this.Output.Workbook.Worksheets.Add("Calibration Standards");
 
             this.CertifiedValueSamples = new List<SampleGroup>();
             this.Samples = new List<SampleGroup>();
-        }
 
-        /* Public Methods */
+            this.Messages = new List<String>();
+        }
+        #endregion
+
+        #region Public Methods
         public void Load()
         {
             // Load performs the following functions:
@@ -50,8 +60,8 @@ namespace WaterAnalysisTool.Loader
                 throw new ArgumentOutOfRangeException("Invalid number of worksheets present in workbook.\n");
             #endregion
 
-            //DataLoaderParser parser = new DataLoaderParser(this, Input);
-            //parser.Parse();
+            DataLoaderParser parser = new DataLoaderParser(this, Input);
+            //parser.Parse(); // TODO uncomment me when the parser is done
 
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
@@ -100,18 +110,30 @@ namespace WaterAnalysisTool.Loader
                     row = WriteSamples(dataws, g, nameof(CertifiedValueSamples), row);
             }
 
+            dataws.Cells[row, 1].Value = "Samples";
+            dataws.Cells[row, 1].Style.Font.Bold = true;
+            row++;
             foreach (SampleGroup g in Samples)
             {
                 if (Samples.Count > 0)
+                {
                     row = WriteSamples(dataws, g, nameof(Samples), row);
+                    row--;
+                }
             }
+
+            this.Messages.Add("Samples written to excel sheet successfully.");
 
             // Write calibration standards
             var calibws = this.Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
             WriteStandards(calibws, CalibrationStandards);
 
-            // SAVE IT
             this.Output.Save();
+
+            this.Messages.Add("Formatted Excel sheet generated successfullly.");
+
+            foreach (String msg in this.Messages)
+                Console.WriteLine("\t" + msg);
         } // end Load
 
         #region Add<Sample>
@@ -120,7 +142,7 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("SampleGroup (Calibration Sample) is null.\n");
 
-            this.CalibrationSamples = sample;
+            this.CalibrationSamples = (SampleGroup) sample.Clone();
         }
 
         public void AddCalibrationStandard(SampleGroup sample)
@@ -128,7 +150,7 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("SampleGroup (Calibration Standard) is null.\n");
 
-            this.CalibrationStandards = sample;
+            this.CalibrationStandards = (SampleGroup) sample.Clone();
         }
 
         public void AddQualityControlSampleGroup(SampleGroup sample)
@@ -136,7 +158,7 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("SampleGroup (Quality Control) is null.\n");
 
-            this.QualityControlSamples = sample;
+            this.QualityControlSamples = (SampleGroup) sample.Clone();
         }
 
         public void AddCertifiedValueSampleGroup(SampleGroup sample)
@@ -144,7 +166,7 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("SampleGroup (Certified Value) is null.\n");
 
-            this.CertifiedValueSamples.Add(sample);
+            this.CertifiedValueSamples.Add((SampleGroup) sample.Clone());
         }
 
         public void AddSampleGroup(SampleGroup sample)
@@ -152,11 +174,12 @@ namespace WaterAnalysisTool.Loader
             if (sample == null)
                 throw new ArgumentNullException("SampleGroup (Generic) is null.\n");
 
-            this.Samples.Add(sample);
+            this.Samples.Add((SampleGroup) sample.Clone());
         }
         #endregion
+        #endregion
 
-        /* Private Methods */
+        #region Private Methods
         private int WriteSamples(ExcelWorksheet dataws, SampleGroup samples, String type, int row)
         {
             int count = 0;
@@ -280,7 +303,7 @@ namespace WaterAnalysisTool.Loader
                                     else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
                                     {
                                         dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Black);
-                                        dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Firebrick);
+                                        dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(Color.Firebrick);
                                         flag = true;
                                     }
 
@@ -495,6 +518,8 @@ namespace WaterAnalysisTool.Loader
             }
             #endregion
 
+            this.Messages.Add(type + " written to excel sheet successfully");
+
             return  row + 2;
         }// end WriteSamples
 
@@ -534,11 +559,112 @@ namespace WaterAnalysisTool.Loader
                 row++;
             }
 
-            // Create the calibration curve graph
-            // 1. Open the ICP-OESstandards-master list Excel sheet or some config sheet where the stock solution concentrations can be found
-            //  1.1 Have to worry about not every concentration in the standards list, what about using the ratio in their name and multiplying by the known mg/L
-            // 2. Create a graph with the measured counts per second in the standards list over their respective stock solution concentration
+            int endRow = row + 2;
 
+            this.Messages.Add("Calibration standards written to excel sheet successfully");
+
+            // Calibration Curve
+            // 1. Open the CheckStandards.xlsx sheet where the stock solution concentrations can be found and read them in
+            //  1.1 Have to worry about not every concentration in the standards list (these will have to be 0's in the .xlsx)
+            // 2. Create a graph with the measured counts per second in the standards list over their respective stock solution concentration
+            try
+            {
+                FileInfo fi = new FileInfo("CheckStandards.xlsx");
+                if (!fi.Exists)
+                    throw new FileNotFoundException("The CheckStandards.xlsx config file does not exist or could not be found and a calibration curve could not be generated.");
+
+                using (var p = new ExcelPackage(fi))
+                {
+                    ExcelWorksheet standardsws = p.Workbook.Worksheets[2]; // TODO this index may change depending on if the CheckStandards.xlxs file changing
+                
+                    // Find Continuing Calibration Verification (CCV) seciton
+                    row = 1;
+                    int blankCount = 0;
+                    while(blankCount < 5 && blankCount >= 0)
+                    {
+                        if(standardsws.Cells[row, 1].Value != null)
+                        {
+                            if(!standardsws.Cells[row, 1].Value.ToString().Equals("Continuing Calibration Verification (CCV)"))
+                            {
+                                 row++;
+                                 blankCount = 0;
+                            }
+
+                            else
+                                break;
+                        }
+
+                        else
+                        {
+                            blankCount++;
+                            row++;
+                        }
+                    }
+
+                    if(blankCount > 4)
+                        throw new ConfigurationErrorException("Could not find \"Continuing Calibration Verification (CCV)\" section in CheckStandards.xlsx config file.");
+
+                    row++;
+
+                    // Find the row that corresponds to the CCV ratio (QualityControlStandards) !! Don't need this if we do in fact use CCV section in CheckStandards, should check if ratios match !!
+                    // String[] QCSName = this.QualityControlSamples.Name.Split(null);
+                    // TODO check if QCSName correct length
+                    // String ratio = QCSName[1];
+
+                    //while(!standardsws.Cells[row, 1].Value.ToString().Contains(ratio))
+                    //{
+                        //row++;
+
+                        // Checking if this is an infinite loop
+                        //if(standardws.Cells[row, 1].Value == null)
+                            //throw new ConfigurationErrorException("Could not find a Check Standard in CheckStandards.xlsx that matches the CCV ratio of " + ratio + ".");
+                    //}
+
+                    // Write CCV avg to Calibration Standards worksheet for use as range? !! Don't need this if we don't use CCV section in CheckStandards, instead find on calibws !!
+                    col = 2;
+                    foreach(double avg in this.QualityControlSamples.Average)
+                    {
+                        calibws.Cells[endRow, col].Value = avg;
+                        col++;
+                    }
+
+                    endRow++;
+
+                    // Read in check standards data and write to Calibration Standards worksheet in Output package at endRow
+                    col = 2;
+                    while(standardsws.Cells[row, col + 1].Value != null)
+                    {
+                        calibws.Cells[endRow, col].Value = standardsws.Cells[row, col + 1].Value;
+                        col++;
+                    }
+
+                    // Create the chart
+                    ExcelChart calCurve = calibws.Drawings.AddChart("Calibration Curve", eChartType.XYScatter);
+                    calCurve.Title.Text = "Calibration Curve";
+                    calCurve.SetPosition(endRow + 2, 0, 1, 0);
+                    calCurve.SetSize(600, 400);
+                    calCurve.YAxis.MinValue = 0;
+                    calCurve.XAxis.MinValue = 0;
+                    calCurve.Legend.Remove();
+
+                    var yrange = calibws.Cells[endRow - 1, 2, endRow - 1, col];
+                    var xrange = calibws.Cells[endRow, 2, endRow, col];
+
+                    var series1 = calCurve.Series.Add(yrange, xrange);
+                    series1.TrendLines.Add(eTrendLine.Linear);
+                    
+                }
+
+
+                this.Messages.Add("Calibration curve generated successfully");
+            }
+
+            catch (Exception e)
+            {
+                this.Messages.Add("Calibration curve could not be generated. Error: " + e.Message);
+                //Console.WriteLine(e.Message);
+            }
         }// end WriteStandards
-    }// end DataLoader class    
-}// end WaterAnalysisTool.Loader namespace
+        #endregion
+    }   
+}

@@ -3,19 +3,20 @@ using System.Collections.Generic;
 
 namespace WaterAnalysisTool.Components
 {
-    class SampleGroup
+    class SampleGroup : ICloneable
     {
-        /* Attributes */
+        #region Attributes
         private String name;
         private bool skipFirst;
-        private List<Sample> samples;//first row contains data from Check Standards file
+        private List<Sample> samples; // first row contains data from Check Standards file
         private List<Double> average;
         private List<Double> lod;
         private List<Double> loq;
         private List<Double> percentDifference;
         private List<Double> rsd;
         private List<Double> recovery;
-        
+        #endregion
+
         #region Properties
         public String Name { get {return this.name;} }
 
@@ -34,7 +35,7 @@ namespace WaterAnalysisTool.Components
         public List<Sample> Samples { get { return this.samples; } }
         #endregion
 
-        /* Constructors */
+        #region Constructors
         public SampleGroup(List<Sample> sampleList, String name, bool skipFirst)
         {
             this.name = name;
@@ -49,6 +50,15 @@ namespace WaterAnalysisTool.Components
             CalculatePercentDifference();
             CalculateRecovery();
         }
+        #endregion
+
+        #region Public Methods
+        public Object Clone()
+        {
+            SampleGroup clone = new SampleGroup(this.samples, this.name, this.skipFirst);
+            return clone;
+        }
+        #endregion
 
         #region Private Methods
         private void CalculateAverage()
@@ -163,7 +173,6 @@ namespace WaterAnalysisTool.Components
                     this.recovery[x] = this.average[x] / this.samples[0].Elements[x].Average * 100;
             }
         }//CalculateRecovery()
-
+        #endregion
     }
-    #endregion
 }
