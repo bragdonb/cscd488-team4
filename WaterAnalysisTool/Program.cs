@@ -75,9 +75,6 @@ namespace WaterAnalysisTool
                         using (var p = new ExcelPackage(new FileInfo(@"tester.xlsx")))
                         {     
                             p.Workbook.Properties.Title = "Title of Workbook";
-                            p.Workbook.Worksheets.Add("Data");
-                            p.Workbook.Worksheets.Add("Calibration Standards");
-
 
                             DataLoader loader = new DataLoader(null, p);
 
