@@ -89,7 +89,7 @@ namespace WaterAnalysisTool.Loader
             if (name == null || comment == null || runTime == null || sampleType == null || repeats > -1)
                 throw new ArgumentNullException("The sample you are trying to create will contain a null member variable\n");
 
-            return new Sample(name, comment, runTime, sampleType, repeats);
+            return new Sample(name, comment, runTime, sampleType, repeats); // TODO see sample constructors
         }
 
 
@@ -169,7 +169,7 @@ namespace WaterAnalysisTool.Loader
                     stringList[8].Replace("Sample Type=", "");
                     stringList[11].Replace("Repeats=", "");
 
-                    sample = this.CreateSample(stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11]));
+                    sample = CreateSample(stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // TODO int.Parse() throws a FormatException (not a number)
 
                     return sample;
                 }

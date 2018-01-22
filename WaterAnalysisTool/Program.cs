@@ -361,8 +361,8 @@ namespace WaterAnalysisTool
                 // Ideally, we would never get here...
                 catch(Exception e)
                 {
-                    Console.WriteLine("\t" + e.Message);
-                    //Console.WriteLine(e.GetType() + " " + e.Message);
+                    //Console.WriteLine("\t" + e.Message);
+                    Console.WriteLine("\t" + e.GetType() + " " + e.Message);
                 }
 
                 Console.WriteLine(); // Some formatting

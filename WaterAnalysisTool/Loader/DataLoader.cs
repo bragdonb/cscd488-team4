@@ -51,7 +51,6 @@ namespace WaterAnalysisTool.Loader
             // 2. Write Calibration Sample data into the Calibration Standards Worksheet
             // Load expects the package to have all required worksheets
 
-            // TODO checking if there are actually samples and stuff, more error checking
             #region Error Checking
             if (this.Output.Workbook == null)
                 throw new ArgumentNullException("Workbook is null.\n");
@@ -61,7 +60,7 @@ namespace WaterAnalysisTool.Loader
             #endregion
 
             DataLoaderParser parser = new DataLoaderParser(this, Input);
-            //parser.Parse(); // TODO uncomment me when the parser is done
+            parser.Parse();
 
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
