@@ -114,7 +114,7 @@ namespace WaterAnalysisTool.Analyzer
                 for (int y = 0; this.dataws.Cells[this.row, this.col].Value != null; y++)
                 {
                     /*TODO Testing Console.WriteLine("Trying to parse: " + this.dataws.Cells[this.row, this.col].Value.ToString() + "   " + "\tfor element: " + this.elementNames[x] + "\tx = " + x + "\ty = " + y);*/
-                    analytes.Add(new Element(this.elementNames[x], "", Double.Parse(this.dataws.Cells[this.row, this.col].Value.ToString()), 0.0, 0.0));
+                    analytes.Add(new Element(this.elementNames[x], "", Double.Parse(this.dataws.Cells[this.row, this.col].Value.ToString()), this.row, this.col));
                     this.row++;
                     if (firstRun)
                         colLength++;

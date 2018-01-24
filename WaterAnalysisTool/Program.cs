@@ -75,8 +75,8 @@ namespace WaterAnalysisTool
                         using (var p = new ExcelPackage(new FileInfo(@"tester.xlsx")))
                         {     
                             p.Workbook.Properties.Title = "Title of Workbook";
-                            p.Workbook.Worksheets.Add("Data");
-                            p.Workbook.Worksheets.Add("Calibration Standards");
+                            //p.Workbook.Worksheets.Add("Data");
+                            //p.Workbook.Worksheets.Add("Calibration Standards");
 
 
                             DataLoader loader = new DataLoader(null, p);
@@ -87,7 +87,8 @@ namespace WaterAnalysisTool
                                 s = new Sample("Method Name", "Calibration Sample #" + i, DateTime.Now.ToString(), "QC", 3);
 
                                 for(int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+                                  s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
 
                                 list.Add(s);
                             }
@@ -95,12 +96,23 @@ namespace WaterAnalysisTool
                             CalibrationSamples = new SampleGroup(list, "CalibrationSamples", false);
                             list.Clear();
 
-                            for (int i = 0; i < 10; i++)
+                            for (int i = 0; i < 7; i++)
                             {
                                 s = new Sample("Method Name", "Calibration Sample #" + i, DateTime.Now.ToString(), "QC", 3);
 
+                                //comment out this for-loop to test using data below
                                 for(int j = 0; j < 10; j++)
-                                s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
+                                /******************** TESTING FOR DATA LOADER CALIBRATION CURVE ********************
+                                s.AddElement(new Element("Al3082", "Units", random.NextDouble(), 1.0, 1.0));
+                                s.AddElement(new Element("Cd2144", "Units", random.NextDouble(), 1.0, 1.0));
+                                s.AddElement(new Element("Cd2265", "Units", random.NextDouble(), 1.0, 1.0));
+                                s.AddElement(new Element("Fe2599", "Units", random.NextDouble(), 1.0, 1.0));
+                                s.AddElement(new Element("K_7664", "Units", random.NextDouble(), 1.0, 1.0));
+                                s.AddElement(new Element("As1890", "Units", random.NextDouble(), 1.0, 1.0));
+                                s.AddElement(new Element("Mn2576", "Units", random.NextDouble(), 1.0, 1.0));
+                                /*********************************** END TESTING ***********************************/
 
                                 list.Add(s);
                             }
@@ -112,8 +124,9 @@ namespace WaterAnalysisTool
                             {
                                 s = new Sample("Method Name", "Quality Control Sample #" + i, DateTime.Now.ToString(), "QC", 3);
 
-                                for (int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+                               for (int j = 0; j < 10; j++)
+                                   s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
+
 
                                 list.Add(s);
 
