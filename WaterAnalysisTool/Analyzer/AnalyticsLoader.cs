@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using WaterAnalysisTool.Components;
 using OfficeOpenXml;
 using WaterAnalysisTool.Exceptions;
+using OfficeOpenXml.Drawing.Chart;
 
 namespace WaterAnalysisTool.Analyzer
 {
@@ -32,6 +33,8 @@ namespace WaterAnalysisTool.Analyzer
         public void Load()
         {
             int count = 0;
+            int sgcount = 0;
+            int correlatedcount = 0;
             int index = 0;
             int row = 1;
             int col = 1;
@@ -98,6 +101,8 @@ namespace WaterAnalysisTool.Analyzer
                 row = 3 + (matrixIndex * (sg.Count + 3));
                 index = 0;
                 count = 0;
+                sgcount++;
+                correlatedcount = 0;
 
                 foreach (List<Element> e1 in sg)
                 {
@@ -114,7 +119,30 @@ namespace WaterAnalysisTool.Analyzer
                         if (CoD >= this.Threshold)
                         {
                             if (e1[0].Name != e2[0].Name)
+                            {
+                                correlatedcount++;
+
                                 correlationws.Cells[row, count + 1].Style.Font.Color.SetColor(Color.Green);
+
+                                // Generate chart of the analytes data that has met the r^2 threshold
+                                ExcelChart ec = correlationws.Drawings.AddChart(e1[0].Name + " vs " + e2[0].Name + " Sample Group #" + sgcount, eChartType.XYScatter);
+                                ec.Title.Text = e1[0].Name + " vs " + e2[0].Name + " Sample Group #" + sgcount;
+                                ec.Title.Font.Size = 12;
+                                ec.SetPosition((sgcount - 1) * sg.Count, 0, count, 0);
+                                ec.SetSize(600, 400);
+                                ec.YAxis.MinValue = 0;
+                                ec.XAxis.MinValue = 0;
+                                ec.Legend.Remove();
+
+                                // Generate ranges for the chart
+                                var dataws = this.DataWorkbook.Workbook.Worksheets[1]; // Should be the first worksheet
+                                var yrange = dataws.Cells[(int)e1[0].StandardDeviation, (int)e1[0].RSD, (int)e1[e1.Count - 1].StandardDeviation, (int)e1[e1.Count - 1].RSD]; // Trust me.
+                                var xrange = dataws.Cells[(int)e2[0].StandardDeviation, (int)e2[0].RSD, (int)e2[e2.Count - 1].StandardDeviation, (int)e2[e2.Count - 1].RSD];
+
+                                // Add the series to the chart
+                                var series1 = ec.Series.Add(yrange, xrange);
+                                series1.TrendLines.Add(eTrendLine.Linear);
+                            }
 
                             else
                             {
@@ -130,6 +158,7 @@ namespace WaterAnalysisTool.Analyzer
                     row++;
                 }
 
+                this.Messages.Add("Found " + correlatedcount + " correlated analytes in sample group #: " + sgcount);
                 matrixIndex++;
             }
 
