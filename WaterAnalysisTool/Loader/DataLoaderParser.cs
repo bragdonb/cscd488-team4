@@ -84,12 +84,12 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private Sample CreateSample (string name, string comment, string runTime, string sampleType, Int32 repeats)
+        private Sample CreateSample (string method, string name, string comment, string runTime, string sampleType, Int32 repeats)
         {
             if (name == null || comment == null || runTime == null || sampleType == null || repeats > -1)
                 throw new ArgumentNullException("The sample you are trying to create will contain a null member variable\n");
 
-            return new Sample(name, comment, runTime, sampleType, repeats); // TODO see sample constructors
+            return new Sample(method, name, comment, runTime, sampleType, repeats); // TODO see sample constructors
         }
 
 
@@ -164,12 +164,13 @@ namespace WaterAnalysisTool.Loader
                     }
 
                     // String Trimming
-                    stringList[1].Replace("SampleName=", "");
+                    stringList[1] = stringList[1].Replace("SampleName=", ""); // SampleName trimming
+                    stringList[3] = stringList[3].Replace("Comment=", ""); // Comment trimming
                     stringList[7] = stringList[7].Substring(stringList[7].IndexOf(' ', 4)); // Getting the correct format for the time
-                    stringList[8].Replace("Sample Type=", "");
-                    stringList[11].Replace("Repeats=", "");
+                    stringList[8] = stringList[8].Replace("Sample Type=", ""); // SampleType trimming
+                    stringList[11] = stringList[11].Replace("Repeats=", ""); // Repeats trimming
 
-                    sample = CreateSample(stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // TODO int.Parse() throws a FormatException (not a number)
+                    sample = CreateSample(stringList[0], stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // TODO int.Parse() throws a FormatException (not a number)
 
                     return sample;
                 }
