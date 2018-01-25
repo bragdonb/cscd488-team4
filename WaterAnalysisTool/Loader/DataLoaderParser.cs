@@ -157,10 +157,17 @@ namespace WaterAnalysisTool.Loader
                 if (string.Compare(line, "[Sample Header]") == 0)
                 {
                     List<string> stringList = new List<string>();
+                    string tmp;
 
-                    while (this.Input.Peek() >= 0)
+                    if (this.Input.Peek() >= 0)
                     {
-                        stringList.Add(this.Input.ReadLine());
+                        tmp = this.Input.ReadLine();
+
+                        while (!(string.IsNullOrEmpty(tmp)))
+                        {
+                            stringList.Add(tmp);
+                            tmp = this.Input.ReadLine();
+                        }
                     }
 
                     // String Trimming
