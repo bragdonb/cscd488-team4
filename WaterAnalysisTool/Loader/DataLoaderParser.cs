@@ -86,7 +86,7 @@ namespace WaterAnalysisTool.Loader
 
         private Sample CreateSample (string method, string name, string comment, string runTime, string sampleType, Int32 repeats)
         {
-            if (name == null || comment == null || runTime == null || sampleType == null || repeats > -1)
+            if (method == null || name == null || comment == null || runTime == null || sampleType == null || repeats < 0)
                 throw new ArgumentNullException("The sample you are trying to create will contain a null member variable\n");
 
             return new Sample(method, name, comment, runTime, sampleType, repeats); // TODO see sample constructors
@@ -117,7 +117,7 @@ namespace WaterAnalysisTool.Loader
                         }
                     }
                 }
-                else if (string.Compare(samp.SampleType, "Unk") == 0)
+                else if (string.Compare(samp.SampleType, "Unk") == 0) // Certified Values may have a sample type of "Unk"
                     this.SampleList.Add(samp);
             }
             else
@@ -148,83 +148,97 @@ namespace WaterAnalysisTool.Loader
         private Sample ParseHeader ()
         {
             Sample sample;
-            this.Input.ReadLine(); // Consumes the empty line before "[Sample Header]"
+            List<string> stringList = new List<string>();
+            string tmp;
 
-            if (this.Input.Peek() >= 0)
+            for (int x = 0; x < 2; x++) // Consumes empty line before "[Sample Header]" as well as line containing "[Sample Header]"
             {
-                string line = this.Input.ReadLine();
-
-                if (string.Compare(line, "[Sample Header]") == 0)
-                {
-                    List<string> stringList = new List<string>();
-                    string tmp;
-
-                    if (this.Input.Peek() >= 0)
-                    {
-                        tmp = this.Input.ReadLine();
-
-                        while (!(string.IsNullOrEmpty(tmp)))
-                        {
-                            stringList.Add(tmp);
-                            tmp = this.Input.ReadLine();
-                        }
-                    }
-
-                    // String Trimming
-                    stringList[1] = stringList[1].Replace("SampleName=", ""); // SampleName trimming
-                    stringList[3] = stringList[3].Replace("Comment=", ""); // Comment trimming
-                    stringList[7] = stringList[7].Substring(stringList[7].IndexOf(' ', 4)); // Getting the correct format for the time
-                    stringList[8] = stringList[8].Replace("Sample Type=", ""); // SampleType trimming
-                    stringList[11] = stringList[11].Replace("Repeats=", ""); // Repeats trimming
-
-                    sample = CreateSample(stringList[0], stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // TODO int.Parse() throws a FormatException (not a number)
-
-                    return sample;
-                }
+                if (this.Input.Peek() >= 0)
+                    this.Input.ReadLine();
+                else
+                    throw new FormatException("The file used as input is not formatted correctly.\n");
             }
 
-            return null;
+            if (this.Input.Peek() >= 0) // Read in sample meta data
+            {
+                tmp = this.Input.ReadLine();
+
+                while (!(string.IsNullOrEmpty(tmp)))
+                {
+                    stringList.Add(tmp);
+
+                    if (this.Input.Peek() >= 0)
+                        tmp = this.Input.ReadLine();
+                    else
+                        throw new FormatException("The file used as input is not formatted correctly.\n");
+                }
+
+                if (stringList.Count != 12)
+                    throw new FormatException("The file used as input is not formatted correctly.\n");
+            }
+            else
+                throw new FormatException("The file used as input is not formatted correctly.\n");
+
+            // String trimming and sample creation
+
+            stringList[1] = stringList[1].Replace("SampleName=", ""); // SampleName trimming
+            stringList[3] = stringList[3].Replace("Comment=", ""); // Comment trimming
+            stringList[7] = stringList[7].Substring(stringList[7].IndexOf(' ', 4)); // Getting the correct format for the time
+            stringList[8] = stringList[8].Replace("Sample Type=", ""); // SampleType trimming
+            stringList[11] = stringList[11].Replace("Repeats=", ""); // Repeats trimming
+
+            sample = CreateSample(stringList[0], stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // TODO int.Parse() throws a FormatException (not a number)
+
+            return sample;
         }
 
 
         private void ParseResults (Sample sample)
         {
             this.CheckForNullSample(sample);
-            this.Input.ReadLine(); // Consumes empty line before "[Results]"
+            List<string> stringList = new List<string>();
+            string tmp;
 
-            if (this.Input.Peek() >= 0)
+            for (int x = 0; x < 3; x++) // Consumes empty line before "[Results]", line containing "[Results]", line containing labels for elements "Elem,Units,Avg,Stddev,RSD"
             {
-                string line = this.Input.ReadLine();
+                if (this.Input.Peek() >= 0)
+                    this.Input.ReadLine();
+                else
+                    throw new FormatException("The file used as input is not formatted correctly.\n");
+            }
 
-                if (string.Compare(line, "[Results]") == 0)
+            if (this.Input.Peek() >= 0) // Reading in elements
+            {
+                tmp = this.Input.ReadLine();
+
+                while (string.IsNullOrEmpty(tmp))
                 {
-                    line = this.Input.ReadLine(); // Consumes the line containing the labels of the Results section
-                    List<string> stringList = new List<string>();
+                    stringList.Add(tmp);
 
-                    while (this.Input.Peek() >= 0)
-                    {
-                        stringList.Add(this.Input.ReadLine());
-                    }
-
-                    foreach (string str in stringList)
-                    {
-                        string[] strArray = str.Split(',');
-
-                        double avg;
-                        double stddev;
-                        double rsd;
-
-                        if (!(double.TryParse(strArray[2], out avg)))
-                            avg = -1;
-                        if (!(double.TryParse(strArray[3], out stddev)))
-                            stddev = -1;
-                        if (!(double.TryParse(strArray[4], out rsd)))
-                            rsd = -1;
-
-                        Element newElement = this.CreateElement(strArray[0], strArray[1], avg, stddev, rsd);
-                        this.AddElementToSample(sample, newElement);
-                    }
+                    if (this.Input.Peek() >= 0)
+                        tmp = this.Input.ReadLine();
+                    else
+                        throw new FormatException("The file used as input is not formatted correctly.\n");
                 }
+            }
+
+            foreach (string str in stringList) // Data scrubbing and Element creation
+            {
+                string[] strArray = str.Split(',');
+
+                double avg;
+                double stddev;
+                double rsd;
+
+                if (!(double.TryParse(strArray[2], out avg)))
+                    avg = Double.NaN;
+                if (!(double.TryParse(strArray[3], out stddev)))
+                    stddev = Double.NaN;
+                if (!(double.TryParse(strArray[4], out rsd)))
+                    rsd = Double.NaN;
+
+                Element newElement = this.CreateElement(strArray[0], strArray[1], avg, stddev, rsd);
+                this.AddElementToSample(sample, newElement);
             }
         }
 
@@ -232,9 +246,23 @@ namespace WaterAnalysisTool.Loader
         private void ParseInternalStandards (Sample sample) // Not sure if this method is needed. Ask Carmen
         {
             this.CheckForNullSample(sample);
-            this.Input.ReadLine(); // Consumes empty line before "[Internal Standards]"
-            string str = this.Input.ReadLine();
-            string[] strList = str.Split(',');
+
+            string str;
+            string[] strList;
+
+            for (int x = 0; x < 2; x++) // Consumes empty line before "[Internal Standards]" and line containing "[Internal Standards]"
+            {
+                if (this.Input.Peek() >= 0)
+                    this.Input.ReadLine();
+                else
+                    throw new FormatException("The file used as input is not formatted correctly.\n");
+            }
+
+            if (this.Input.Peek() >= 0)
+            {
+                str = this.Input.ReadLine();
+                strList = str.Split(','); // Do something with this?
+            }
         }
 
 
