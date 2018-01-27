@@ -44,6 +44,7 @@ namespace WaterAnalysisTool.Loader
 
         public void Parse ()
         {
+            this.Input.ReadLine(); // Consumes empty line at the beginning of the file
             Sample samp = null;
 
             while (this.Input.Peek() >= 0)
@@ -51,9 +52,9 @@ namespace WaterAnalysisTool.Loader
                 samp = this.ParseHeader();
                 this.ParseResults(samp);
                 this.ParseInternalStandards(samp);
+                this.AddSampleToList(samp);
             }
 
-            this.AddSampleToList(samp);
             this.PassToDataLoader();
         }
 
@@ -151,13 +152,12 @@ namespace WaterAnalysisTool.Loader
             List<string> stringList = new List<string>();
             string tmp;
 
-            for (int x = 0; x < 2; x++) // Consumes empty line before "[Sample Header]" as well as line containing "[Sample Header]"
+            if (this.Input.Peek() >= 0)
             {
-                if (this.Input.Peek() >= 0)
-                    this.Input.ReadLine();
-                else
-                    throw new FormatException("The file used as input is not formatted correctly.\n");
+                this.Input.ReadLine(); // Consumes "[Sample Header]"
             }
+            else
+                throw new FormatException("The file used as input is not formatted correctly.\n");
 
             if (this.Input.Peek() >= 0) // Read in sample meta data
             {
@@ -168,7 +168,9 @@ namespace WaterAnalysisTool.Loader
                     stringList.Add(tmp);
 
                     if (this.Input.Peek() >= 0)
+                    {
                         tmp = this.Input.ReadLine();
+                    }
                     else
                         throw new FormatException("The file used as input is not formatted correctly.\n");
                 }
@@ -177,7 +179,7 @@ namespace WaterAnalysisTool.Loader
                     throw new FormatException("The file used as input is not formatted correctly.\n");
             }
             else
-                throw new FormatException("The file used as input is not formatted correctly.\n");
+                throw new FormatException("The file used as input is not formatted correctly. ParseHeader4\n");
 
             // String trimming and sample creation
 
@@ -199,24 +201,28 @@ namespace WaterAnalysisTool.Loader
             List<string> stringList = new List<string>();
             string tmp;
 
-            for (int x = 0; x < 3; x++) // Consumes empty line before "[Results]", line containing "[Results]", line containing labels for elements "Elem,Units,Avg,Stddev,RSD"
+            for (int x = 0; x < 2; x++) // Consumes line containing "[Results]", line containing labels for elements "Elem,Units,Avg,Stddev,RSD"
             {
                 if (this.Input.Peek() >= 0)
+                {
                     this.Input.ReadLine();
+                }
                 else
-                    throw new FormatException("The file used as input is not formatted correctly.\n");
+                    throw new FormatException("The file used as input is not formatted correctly\n");
             }
 
             if (this.Input.Peek() >= 0) // Reading in elements
             {
                 tmp = this.Input.ReadLine();
 
-                while (string.IsNullOrEmpty(tmp))
+                while (!(string.IsNullOrEmpty(tmp)))
                 {
                     stringList.Add(tmp);
 
                     if (this.Input.Peek() >= 0)
+                    {
                         tmp = this.Input.ReadLine();
+                    }
                     else
                         throw new FormatException("The file used as input is not formatted correctly.\n");
                 }
@@ -229,6 +235,8 @@ namespace WaterAnalysisTool.Loader
                 double avg;
                 double stddev;
                 double rsd;
+
+                strArray[2] = strArray[2].Replace(" ", ""); // Removes the whitespace character in front avgs
 
                 if (!(double.TryParse(strArray[2], out avg)))
                     avg = Double.NaN;
@@ -250,18 +258,20 @@ namespace WaterAnalysisTool.Loader
             string str;
             string[] strList;
 
-            for (int x = 0; x < 2; x++) // Consumes empty line before "[Internal Standards]" and line containing "[Internal Standards]"
-            {
-                if (this.Input.Peek() >= 0)
-                    this.Input.ReadLine();
-                else
-                    throw new FormatException("The file used as input is not formatted correctly.\n");
+            // May not need to consume empty line before each section
+
+            if (this.Input.Peek() >= 0)
+            {// Consumes line containing "[Internal Standards]"
+                this.Input.ReadLine();
             }
+            else
+                throw new FormatException("The file used as input is not formatted correctly.\n");
 
             if (this.Input.Peek() >= 0)
             {
                 str = this.Input.ReadLine();
                 strList = str.Split(','); // Do something with this?
+                this.Input.ReadLine(); // Consumes empty line after Internal Standards section
             }
         }
 
