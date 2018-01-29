@@ -684,7 +684,7 @@ namespace WaterAnalysisTool.Loader
                         elemCol++;
                     }
 
-                    endRow++;
+                    endRow += 2;
                     int startRow = endRow;
                     int numStandards = 0;
 
@@ -705,12 +705,12 @@ namespace WaterAnalysisTool.Loader
                     calCurve.SetSize(600, 400);
                     calCurve.YAxis.MinValue = 0;
                     calCurve.XAxis.MinValue = 0;
-                    //calCurve.Legend.Remove();
                     
                     ExcelRange yrange = null, xrange = null;
                     ExcelChartSerie s = null;
 
                     bool found = false;
+                    int seriesIndex = 0; // for naming the series
 
                     // Search through Standard element names to match up with Sample element names, and graph them
                     for (int sampleElementCol = 3; calibws.Cells[2, sampleElementCol].Value != null; sampleElementCol++)
@@ -719,21 +719,24 @@ namespace WaterAnalysisTool.Loader
                         for (int standardElementCol = 3; standardElementCol < elemCol && !found; standardElementCol++)
                         {
                             //startRow = beginning of standards section
-                            if (calibws.Cells[2, sampleElementCol].Value.Equals(calibws.Cells[startRow - 1, standardElementCol].Value))
+                            if (calibws.Cells[2, sampleElementCol].Value.Equals(calibws.Cells[startRow - 2, standardElementCol].Value))
                             {
                                 //you found the matching one, graph it!
                                 found = true;
 
-                                yrange = calibws.Cells[4, sampleElementCol, 3+numSamples, sampleElementCol];
+                                yrange = calibws.Cells[4, sampleElementCol, 3 + numSamples, sampleElementCol];
                                 xrange = calibws.Cells[startRow, standardElementCol, numStandards + startRow - 1, standardElementCol];
 
                                 s = calCurve.Series.Add(yrange, xrange);
+                                calCurve.Series[seriesIndex].Header = calibws.Cells[2, sampleElementCol].Value.ToString(); // names each series                              
                                 s.TrendLines.Add(eTrendLine.Linear);
+                                seriesIndex++;
                                 // TODO: find a way to hide the trendline equation (?)
                             }
                         }
                     }
-                                        
+
+
                     yrange = calibws.Cells[endRow - 1, 2, endRow - 1, col];
                     xrange = calibws.Cells[endRow, 2, endRow, col];
 
