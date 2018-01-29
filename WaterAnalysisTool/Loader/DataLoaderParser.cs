@@ -106,15 +106,18 @@ namespace WaterAnalysisTool.Loader
                     this.CalibrationSamplesList.Add(samp); // Assuming all Calibration Samples will be named "Instrument Blank" at this point
                 else if (string.Compare(samp.SampleType, "QC") == 0)
                 {
-                    foreach (List<Sample> sampleList in this.CertifiedValueList)
+                    if (this.CertifiedValueList.Count == 0)
+                        this.CreateNewCertifiedValueSubList(samp);
+                    else
                     {
-                        if (string.Compare(sampleList[0].Name, samp.Name) == 0) // This condition may not be correct. Need to ask Carmen
-                            sampleList.Add(samp);
-                        else
+                        foreach (List<Sample> sampleList in this.CertifiedValueList)
                         {
-                            List<Sample> tempList = new List<Sample>();
-                            tempList.Add(samp);
-                            this.CertifiedValueList.Add(tempList); // Soil B, TMDW etc.
+                            if (string.Compare(sampleList[0].Name, samp.Name) == 0) // This condition may not be correct. Need to ask Carmen
+                                sampleList.Add(samp);
+                            else
+                            {
+                                this.CreateNewCertifiedValueSubList(samp);
+                            }
                         }
                     }
                 }
@@ -153,9 +156,7 @@ namespace WaterAnalysisTool.Loader
             string tmp;
 
             if (this.Input.Peek() >= 0)
-            {
                 this.Input.ReadLine(); // Consumes "[Sample Header]"
-            }
             else
                 throw new FormatException("The file used as input is not formatted correctly.\n");
 
@@ -204,9 +205,7 @@ namespace WaterAnalysisTool.Loader
             for (int x = 0; x < 2; x++) // Consumes line containing "[Results]", line containing labels for elements "Elem,Units,Avg,Stddev,RSD"
             {
                 if (this.Input.Peek() >= 0)
-                {
                     this.Input.ReadLine();
-                }
                 else
                     throw new FormatException("The file used as input is not formatted correctly\n");
             }
@@ -258,12 +257,8 @@ namespace WaterAnalysisTool.Loader
             string str;
             string[] strList;
 
-            // May not need to consume empty line before each section
-
             if (this.Input.Peek() >= 0)
-            {// Consumes line containing "[Internal Standards]"
-                this.Input.ReadLine();
-            }
+                this.Input.ReadLine(); // Consumes line containing "[Internal Standards]"
             else
                 throw new FormatException("The file used as input is not formatted correctly.\n");
 
@@ -280,6 +275,20 @@ namespace WaterAnalysisTool.Loader
         {
             if (samp == null)
                 throw new ArgumentNullException("The sample that was passed in is null\n");
+        }
+
+
+        private void CreateNewCertifiedValueSubList (Sample samp)
+        {
+            List<Sample> tempList = new List<Sample>();
+            tempList.Add(samp);
+            this.CertifiedValueList.Add(tempList); // Soil B, TMDW etc.
+        }
+
+
+        private void CombSampleList ()
+        {
+            // This method will comb through List<Sample> SampleList and pull out CertifiedValueSamples that have sample type "Unk", placing them in List<List<Sample>> CertifiedValueList
         }
     }
 }
