@@ -18,9 +18,9 @@ namespace WaterAnalysisTool.Loader
         private List<Sample> CalibrationStandardsList; // Calibration Standard -> Sample Type: Cal, --- These go in the Calibration Standards worksheet.  Calib Blank, CalibStd
         private List<Sample> CalibrationSamplesList;  // Quality Control Solutions -> Sample Type: QC --- These are usually named Instrument Blank
         private List<Sample> QualityControlSamplesList;  // Stated Values (CCV) -> Sample Type: QC --- These will have CCV in the name
-        private List<Sample> SampleList; // Samples -> Sample Type: Unk --- These will have very different names (Perry/DFW/etc.)
+
+        private List<List<Sample>> SampleList; // Samples -> Sample Type: Unk --- These will have very different names (Perry/DFW/etc.)
         private List<List<Sample>> CertifiedValueList;  // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC --- The analytes (elements) found under Check Standards in the xlsx file will not always match up with the analytes of the Certified Value samples
-                                                        // The names of the various Certified Values are not guaranteed to be SoilB/TMDW/etc. --- These can have different names with each run
 
 
         /* Constructors */
@@ -34,7 +34,8 @@ namespace WaterAnalysisTool.Loader
             this.CalibrationStandardsList = new List<Sample>(); // CalibStd
             this.CalibrationSamplesList = new List<Sample>(); // Instrument Blank
             this.QualityControlSamplesList = new List<Sample>(); // CCV
-            this.SampleList = new List<Sample>();
+
+            this.SampleList = new List<List<Sample>>();
             this.CertifiedValueList = new List<List<Sample>>();
         }
 
@@ -45,21 +46,24 @@ namespace WaterAnalysisTool.Loader
         public void Parse ()
         {
             this.Input.ReadLine(); // Consumes empty line at the beginning of the file
-            Sample samp = null;
 
             while (this.Input.Peek() >= 0)
             {
-                samp = this.ParseHeader();
+                Sample samp = this.ParseHeader();
                 this.ParseResults(samp);
                 this.ParseInternalStandards(samp);
                 this.AddSampleToList(samp);
             }
 
+            this.CombSampleList();
             this.PassToDataLoader();
         }
 
 
         /* Private Methods */
+
+
+        // SampleGroup, Sample & Element creation
 
 
         private SampleGroup CreateSampleGroup (List<Sample> sampleList, string name, bool skipFirst)
@@ -71,68 +75,19 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void PassToDataLoader ()
-        {
-            foreach (List<Sample> sampleList in this.CertifiedValueList)
-            {
-                this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(sampleList, "Certified Values", true));
-            }
-
-            this.Loader.AddCalibrationStandard(this.CreateSampleGroup(this.CalibrationStandardsList, "Calibration Standards", false)); // CalibStd
-            this.Loader.AddCalibrationSampleGroup(this.CreateSampleGroup(this.CalibrationSamplesList, "Quality Control Solutions", false)); // Instrument Blank
-            this.Loader.AddQualityControlSampleGroup(this.CreateSampleGroup(this.QualityControlSamplesList, "Stated Value", true)); // CCV
-            this.Loader.AddSampleGroup(this.CreateSampleGroup(this.SampleList, "Samples", false));
-        }
-
-
         private Sample CreateSample (string method, string name, string comment, string runTime, string sampleType, Int32 repeats)
         {
             if (method == null || name == null || comment == null || runTime == null || sampleType == null || repeats < 0)
-                throw new ArgumentNullException("The sample you are trying to create will contain a null member variable\n");
+                throw new ArgumentNullException("The Sample you are trying to create will contain a null member variable\n");
 
             return new Sample(method, name, comment, runTime, sampleType, repeats); // TODO see sample constructors
         }
 
-
-        private void AddSampleToList (Sample samp)
-        {
-            if (samp != null)
-            {
-                if (string.Compare(samp.SampleType, "Cal") == 0)
-                    this.CalibrationStandardsList.Add(samp); // CalibStd
-                else if (samp.Name.StartsWith("CCV"))
-                    this.QualityControlSamplesList.Add(samp); // CCV
-                else if (string.Compare(samp.Name, "Instrument Blank") == 0)
-                    this.CalibrationSamplesList.Add(samp); // Assuming all Calibration Samples will be named "Instrument Blank" at this point
-                else if (string.Compare(samp.SampleType, "QC") == 0)
-                {
-                    if (this.CertifiedValueList.Count == 0)
-                        this.CreateNewCertifiedValueSubList(samp);
-                    else
-                    {
-                        foreach (List<Sample> sampleList in this.CertifiedValueList)
-                        {
-                            if (string.Compare(sampleList[0].Name, samp.Name) == 0) // This condition may not be correct. Need to ask Carmen
-                                sampleList.Add(samp);
-                            else
-                            {
-                                this.CreateNewCertifiedValueSubList(samp);
-                            }
-                        }
-                    }
-                }
-                else if (string.Compare(samp.SampleType, "Unk") == 0) // Certified Values may have a sample type of "Unk"
-                    this.SampleList.Add(samp);
-            }
-            else
-                throw new ArgumentNullException("The sample that was to be added to a list was null\n");
-        }
-
-
+        
         private Element CreateElement (string name, string units, Double avg, Double stddev, Double rsd)
         {
             if (name == null || units == null)
-                throw new ArgumentNullException("The element you are trying to instantiate will contain a null member variable\n");
+                throw new ArgumentNullException("The Element you are trying to instantiate will contain a null member variable\n");
 
             return new Element(name, units, avg, stddev, rsd);
         }
@@ -149,6 +104,9 @@ namespace WaterAnalysisTool.Loader
         }
 
 
+        // Parse() helper methods
+
+
         private Sample ParseHeader ()
         {
             Sample sample;
@@ -160,7 +118,7 @@ namespace WaterAnalysisTool.Loader
             else
                 throw new FormatException("The file used as input is not formatted correctly.\n");
 
-            if (this.Input.Peek() >= 0) // Read in sample meta data
+            if (this.Input.Peek() >= 0) // Start reading in sample meta data
             {
                 tmp = this.Input.ReadLine();
 
@@ -169,9 +127,7 @@ namespace WaterAnalysisTool.Loader
                     stringList.Add(tmp);
 
                     if (this.Input.Peek() >= 0)
-                    {
                         tmp = this.Input.ReadLine();
-                    }
                     else
                         throw new FormatException("The file used as input is not formatted correctly.\n");
                 }
@@ -181,8 +137,6 @@ namespace WaterAnalysisTool.Loader
             }
             else
                 throw new FormatException("The file used as input is not formatted correctly. ParseHeader4\n");
-
-            // String trimming and sample creation
 
             stringList[1] = stringList[1].Replace("SampleName=", ""); // SampleName trimming
             stringList[3] = stringList[3].Replace("Comment=", ""); // Comment trimming
@@ -210,7 +164,7 @@ namespace WaterAnalysisTool.Loader
                     throw new FormatException("The file used as input is not formatted correctly\n");
             }
 
-            if (this.Input.Peek() >= 0) // Reading in elements
+            if (this.Input.Peek() >= 0) // Start reading in elements data
             {
                 tmp = this.Input.ReadLine();
 
@@ -219,9 +173,7 @@ namespace WaterAnalysisTool.Loader
                     stringList.Add(tmp);
 
                     if (this.Input.Peek() >= 0)
-                    {
                         tmp = this.Input.ReadLine();
-                    }
                     else
                         throw new FormatException("The file used as input is not formatted correctly.\n");
                 }
@@ -250,7 +202,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void ParseInternalStandards (Sample sample) // Not sure if this method is needed. Ask Carmen
+        private void ParseInternalStandards (Sample sample)
         {
             this.CheckForNullSample(sample);
 
@@ -271,10 +223,73 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void CheckForNullSample (Sample samp)
+        private void AddSampleToList (Sample samp)
         {
-            if (samp == null)
-                throw new ArgumentNullException("The sample that was passed in is null\n");
+            this.CheckForNullSample(samp);
+
+            if (string.Compare(samp.SampleType, "Cal") == 0)
+                this.CalibrationStandardsList.Add(samp); // CalibStd
+            else if (samp.Name.StartsWith("CCV"))
+                this.QualityControlSamplesList.Add(samp); // CCV
+            else if (string.Compare(samp.Name, "Instrument Blank") == 0)
+                this.CalibrationSamplesList.Add(samp); // Assuming all Calibration Samples will be named "Instrument Blank"
+            else if (string.Compare(samp.SampleType, "QC") == 0)
+            {
+                if (this.CertifiedValueList.Count == 0)
+                    this.CreateNewCertifiedValueSubList(samp);
+                else
+                {
+                    foreach (List<Sample> sampleList in this.CertifiedValueList)
+                    {
+                        if (samp.Name.StartsWith(sampleList[0].Name.Substring(0, 4))) //
+                            sampleList.Add(samp);
+                        else
+                            this.CreateNewCertifiedValueSubList(samp);
+                    }
+                }
+            }
+            else if (string.Compare(samp.SampleType, "Unk") == 0)
+            {
+                if (this.SampleList.Count == 0)
+                    this.CreateNewSampleSubList(samp);
+                else
+                {
+                    foreach (List<Sample> sampleList in this.SampleList)
+                    {
+                        if (samp.Name.StartsWith(sampleList[0].Name.Substring(0, 4))) //
+                            sampleList.Add(samp);
+                        else
+                            this.CreateNewSampleSubList(samp);
+                    }
+                }
+            }
+        }
+
+
+        private void PassToDataLoader ()
+        {
+            foreach (List<Sample> sampleList in this.CertifiedValueList)
+                this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(sampleList, "Certified Values", true));
+
+            foreach (List<Sample> sampleList in this.SampleList)
+                this.Loader.AddSampleGroup(new SampleGroup(sampleList, "Samples", false));
+
+            this.Loader.AddCalibrationStandard(this.CreateSampleGroup(this.CalibrationStandardsList, "Calibration Standards", false)); // CalibStd
+            this.Loader.AddCalibrationSampleGroup(this.CreateSampleGroup(this.CalibrationSamplesList, "Quality Control Solutions", false)); // Instrument Blank
+            this.Loader.AddQualityControlSampleGroup(this.CreateSampleGroup(this.QualityControlSamplesList, "Stated Value", true)); // CCV
+        }
+
+
+        private void CombSampleList () // This method will comb through List<List<Sample>> SampleList and pull out certified value samples that have sample type "Unk", placing them in List<List<Sample>> CertifiedValueList
+        {
+            foreach (List<Sample> sampleList in this.SampleList)
+            {
+                foreach (List<Sample> certifiedValueList in this.CertifiedValueList)
+                {
+                    if (sampleList[0].Name.StartsWith(certifiedValueList[0].Name.Substring(0, 4)))
+                        // 
+                }
+            }
         }
 
 
@@ -286,9 +301,18 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void CombSampleList ()
+        private void CreateNewSampleSubList (Sample samp)
         {
-            // This method will comb through List<Sample> SampleList and pull out CertifiedValueSamples that have sample type "Unk", placing them in List<List<Sample>> CertifiedValueList
+            List<Sample> tempList = new List<Sample>();
+            tempList.Add(samp);
+            this.SampleList.Add(tempList);
+        }
+
+
+        private void CheckForNullSample (Sample samp)
+        {
+            if (samp == null)
+                throw new ArgumentNullException("The sample that was passed in is null\n");
         }
     }
 }
