@@ -282,14 +282,14 @@ namespace WaterAnalysisTool.Loader
 
         private void CombSampleList () // This method will comb through List<List<Sample>> SampleList and pull out certified value samples that have sample type "Unk", placing them in List<List<Sample>> CertifiedValueList
         {
-            foreach (List<Sample> sampleList in this.SampleList)
+            /*foreach (List<Sample> sampleList in this.SampleList)
             {
                 foreach (List<Sample> certifiedValueList in this.CertifiedValueList)
                 {
                     if (sampleList[0].Name.StartsWith(certifiedValueList[0].Name.Substring(0, 4)))
                         // 
                 }
-            }
+            }*/
         }
 
 
