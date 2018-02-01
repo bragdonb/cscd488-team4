@@ -528,6 +528,7 @@ namespace WaterAnalysisTool.Loader
             Sample headerSample = standards.Samples[standards.Samples.Count - 1];
 
             int col = 3; //Start at row 2 col 3
+
             foreach (Element e in headerSample.Elements)
             {
                 // Concentration headers
@@ -543,6 +544,7 @@ namespace WaterAnalysisTool.Loader
             // Write standards data
             int row = 4;
             col = 1;
+
             foreach (Sample s in standards.Samples)
             {
                 col = 1;
@@ -551,12 +553,72 @@ namespace WaterAnalysisTool.Loader
                 calibws.Cells[row, ++col].Value = s.RunTime;
 
                 foreach (Element e in s.Elements)
-                {
                     calibws.Cells[row, ++col].Value = e.Average;
-                }
 
                 row++;
             }
+
+            /******************************************** TESTING *******************************************
+
+            calibws.Cells[4, 3].Value = 0;
+            calibws.Cells[5, 3].Value = 0.02;
+            calibws.Cells[6, 3].Value = 0.1;
+            calibws.Cells[7, 3].Value = 0.2;
+            calibws.Cells[8, 3].Value = 1;
+            calibws.Cells[9, 3].Value = 2;
+            calibws.Cells[10, 3].Value = 4;
+
+            calibws.Cells[4, 4].Value = 0;
+            calibws.Cells[5, 4].Value = 0.004;
+            calibws.Cells[6, 4].Value = 0.02;
+            calibws.Cells[7, 4].Value = 0.04;
+            calibws.Cells[8, 4].Value = 0.2;
+            calibws.Cells[9, 4].Value = 0.4;
+            calibws.Cells[10, 4].Value = 0.8;
+
+            calibws.Cells[4, 5].Value = 0;
+            calibws.Cells[5, 5].Value = 0.004;
+            calibws.Cells[6, 5].Value = 0.02;
+            calibws.Cells[7, 5].Value = 0.04;
+            calibws.Cells[8, 5].Value = 0.2;
+            calibws.Cells[9, 5].Value = 0.4;
+            calibws.Cells[10, 5].Value = 0.8;
+
+            calibws.Cells[4, 6].Value = 0;
+            calibws.Cells[5, 6].Value = 0.02;
+            calibws.Cells[6, 6].Value = 0.1;
+            calibws.Cells[7, 6].Value = 0.2;
+            calibws.Cells[8, 6].Value = 1;
+            calibws.Cells[9, 6].Value = 2;
+            calibws.Cells[10, 6].Value = 4;
+
+            calibws.Cells[4, 7].Value = 0;
+            calibws.Cells[5, 7].Value = 0.03;
+            calibws.Cells[6, 7].Value = 0.15;
+            calibws.Cells[7, 7].Value = 0.3;
+            calibws.Cells[8, 7].Value = 1.5;
+            calibws.Cells[9, 7].Value = 3;
+            calibws.Cells[10, 7].Value = 6;
+
+            calibws.Cells[4, 8].Value = 0;
+            calibws.Cells[5, 8].Value = 0.005;
+            calibws.Cells[6, 8].Value = 0.025;
+            calibws.Cells[7, 8].Value = 0.05;
+            calibws.Cells[8, 8].Value = 0.25;
+            calibws.Cells[9, 8].Value = 0.5;
+            calibws.Cells[10, 8].Value = 1;
+
+            calibws.Cells[4, 9].Value = 0;
+            calibws.Cells[5, 9].Value = 0.004;
+            calibws.Cells[6, 9].Value = 0.02;
+            calibws.Cells[7, 9].Value = 0.04;
+            calibws.Cells[8, 9].Value = 0.2;
+            calibws.Cells[9, 9].Value = 0.4;
+            calibws.Cells[10, 9].Value = 0.8;
+
+            /********************************************* END TESTING *********************************************/
+
+            int numSamples = row - 4;
 
             int endRow = row + 2;
 
@@ -574,21 +636,22 @@ namespace WaterAnalysisTool.Loader
 
                 using (var p = new ExcelPackage(fi))
                 {
-                    ExcelWorksheet standardsws = p.Workbook.Worksheets[2]; // TODO this index may change depending on if the CheckStandards.xlxs file changing
+                    // TODO this index [2] may change depending on if the CheckStandards.xlxs file changing
+                    ExcelWorksheet standardsws = p.Workbook.Worksheets[2];
                 
-                    // Find Continuing Calibration Verification (CCV) seciton
+                    // Find Calibration Standards section
                     row = 1;
                     int blankCount = 0;
+
                     while(blankCount < 5 && blankCount >= 0)
                     {
                         if(standardsws.Cells[row, 1].Value != null)
                         {
-                            if(!standardsws.Cells[row, 1].Value.ToString().Equals("Continuing Calibration Verification (CCV)"))
+                            if(!standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("calibration standards"))
                             {
                                  row++;
                                  blankCount = 0;
                             }
-
                             else
                                 break;
                         }
@@ -601,40 +664,37 @@ namespace WaterAnalysisTool.Loader
                     }
 
                     if(blankCount > 4)
-                        throw new ConfigurationErrorException("Could not find \"Continuing Calibration Verification (CCV)\" section in CheckStandards.xlsx config file.");
+                        throw new ConfigurationErrorException("Could not find \"Calibration Standards\" section in CheckStandards.xlsx config file.");
 
                     row++;
 
-                    // Find the row that corresponds to the CCV ratio (QualityControlStandards) !! Don't need this if we do in fact use CCV section in CheckStandards, should check if ratios match !!
-                    // String[] QCSName = this.QualityControlSamples.Name.Split(null);
-                    // TODO check if QCSName correct length
-                    // String ratio = QCSName[1];
+                    // Find element names and amount of elements
+                    int elemCol = 3, elemRow = 1;
 
-                    //while(!standardsws.Cells[row, 1].Value.ToString().Contains(ratio))
-                    //{
-                        //row++;
+                    while (standardsws.Cells[elemRow, elemCol].Value == null)
+                        elemRow++;
 
-                        // Checking if this is an infinite loop
-                        //if(standardws.Cells[row, 1].Value == null)
-                            //throw new ConfigurationErrorException("Could not find a Check Standard in CheckStandards.xlsx that matches the CCV ratio of " + ratio + ".");
-                    //}
-
-                    // Write CCV avg to Calibration Standards worksheet for use as range? !! Don't need this if we don't use CCV section in CheckStandards, instead find on calibws !!
-                    col = 2;
-                    foreach(double avg in this.QualityControlSamples.Average)
+                    while(standardsws.Cells[elemRow, elemCol].Value != null)
                     {
-                        calibws.Cells[endRow, col].Value = avg;
-                        col++;
+                        calibws.Cells[endRow, elemCol].Value = standardsws.Cells[elemRow, elemCol].Value;
+                        calibws.Cells[endRow + 1, elemCol].Value = standardsws.Cells[elemRow + 1, elemCol].Value;
+                        calibws.Cells[endRow, elemCol].Style.Font.Bold = true;
+                        calibws.Cells[endRow + 1, elemCol].Style.Font.Bold = true;
+                        elemCol++;
                     }
 
                     endRow++;
+                    int startRow = endRow;
+                    int numStandards = 0;
 
-                    // Read in check standards data and write to Calibration Standards worksheet in Output package at endRow
-                    col = 2;
-                    while(standardsws.Cells[row, col + 1].Value != null)
+                    for ( ; standardsws.Cells[row, col].Value != null; row++)
                     {
-                        calibws.Cells[endRow, col].Value = standardsws.Cells[row, col + 1].Value;
-                        col++;
+                        for(col = 1; col < elemCol; col++)
+                            calibws.Cells[endRow, col].Value = standardsws.Cells[row, col].Value;
+
+                        col = 1;
+                        endRow++;
+                        numStandards++;
                     }
 
                     // Create the chart
@@ -644,13 +704,40 @@ namespace WaterAnalysisTool.Loader
                     calCurve.SetSize(600, 400);
                     calCurve.YAxis.MinValue = 0;
                     calCurve.XAxis.MinValue = 0;
-                    calCurve.Legend.Remove();
+                    //calCurve.Legend.Remove();
+                    
+                    ExcelRange yrange = null, xrange = null;
+                    ExcelChartSerie s = null;
 
-                    var yrange = calibws.Cells[endRow - 1, 2, endRow - 1, col];
-                    var xrange = calibws.Cells[endRow, 2, endRow, col];
+                    bool found = false;
+
+                    // Search through Standard element names to match up with Sample element names, and graph them
+                    for (int sampleElementCol = 3; calibws.Cells[2, sampleElementCol].Value != null; sampleElementCol++)
+                    {
+                        found = false;
+                        for (int standardElementCol = 3; standardElementCol < elemCol && !found; standardElementCol++)
+                        {
+                            //startRow = beginning of standards section
+                            if (calibws.Cells[2, sampleElementCol].Value.Equals(calibws.Cells[startRow - 1, standardElementCol].Value))
+                            {
+                                //you found the matching one, graph it!
+                                found = true;
+
+                                yrange = calibws.Cells[4, sampleElementCol, 3+numSamples, sampleElementCol];
+                                xrange = calibws.Cells[startRow, standardElementCol, numStandards + startRow - 1, standardElementCol];
+
+                                s = calCurve.Series.Add(yrange, xrange);
+                                s.TrendLines.Add(eTrendLine.Linear);
+                                // TODO: find a way to hide the trendline equation (?)
+                            }
+                        }
+                    }
+                                        
+                    yrange = calibws.Cells[endRow - 1, 2, endRow - 1, col];
+                    xrange = calibws.Cells[endRow, 2, endRow, col];
 
                     var series1 = calCurve.Series.Add(yrange, xrange);
-                    series1.TrendLines.Add(eTrendLine.Linear);
+                    series1.TrendLines.Add(eTrendLine.Linear);               
                     
                 }
 
@@ -661,7 +748,6 @@ namespace WaterAnalysisTool.Loader
             catch (Exception e)
             {
                 this.Messages.Add("Calibration curve could not be generated. Error: " + e.Message);
-                //Console.WriteLine(e.Message);
             }
         }// end WriteStandards
         #endregion
