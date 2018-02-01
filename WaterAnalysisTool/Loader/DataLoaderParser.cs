@@ -1,318 +1,313 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using OfficeOpenXml;
 using WaterAnalysisTool.Components;
+using WaterAnalysisTool.Exceptions;
 
 namespace WaterAnalysisTool.Loader
 {
     class DataLoaderParser
     {
-
-
-        /* Attributes */
-
-
+        #region Attributes
         private DataLoader Loader;
         private StreamReader Input;
 
-        private List<Sample> CalibrationStandardsList; // Calibration Standard -> Sample Type: Cal, --- These go in the Calibration Standards worksheet.  Calib Blank, CalibStd
-        private List<Sample> CalibrationSamplesList;  // Quality Control Solutions -> Sample Type: QC --- These are usually named Instrument Blank
-        private List<Sample> QualityControlSamplesList;  // Stated Values (CCV) -> Sample Type: QC --- These will have CCV in the name
+        private List<Sample> CalibrationSamples;
+        private List<Sample> CalibrationStandards;
+        private List<Sample> QualityControlSamples;
+        private List<List<Sample>> CertifiedValueSamples; // When adding to this you will need to find the existing list with matching name, may not always exist
+        private List<List<Sample>> Samples;
+        #endregion
 
-        private List<List<Sample>> SampleList; // Samples -> Sample Type: Unk --- These will have very different names (Perry/DFW/etc.)
-        private List<List<Sample>> CertifiedValueList;  // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC --- The analytes (elements) found under Check Standards in the xlsx file will not always match up with the analytes of the Certified Value samples
-
-
-        /* Constructors */
-
-
+        #region Constructors
         public DataLoaderParser (DataLoader loader, StreamReader inf)
         {
             this.Loader = loader;
             this.Input = inf;
 
-            this.CalibrationStandardsList = new List<Sample>(); // CalibStd
-            this.CalibrationSamplesList = new List<Sample>(); // Instrument Blank
-            this.QualityControlSamplesList = new List<Sample>(); // CCV
+            this.CalibrationSamples = new List<Sample>();
+            this.CalibrationStandards = new List<Sample>();
+            this.QualityControlSamples = new List<Sample>();
+            this.CertifiedValueSamples = new List<List<Sample>>();
+            this.Samples = new List<List<Sample>>();
 
-            this.SampleList = new List<List<Sample>>();
-            this.CertifiedValueList = new List<List<Sample>>();
-        }
+            #region Initialize QualityControlSamples and CertifiedValueSamples from CheckStandards.xlsx config file
+            FileInfo fi = new FileInfo("CheckStandards.xlsx");
+            if (!fi.Exists)
+                throw new FileNotFoundException("The CheckStandards.xlsx config file does not exist or could not be found and a formatted excel worksheet could not be generated.");
 
-
-        /* Public Methods */
-
-
-        public void Parse ()
-        {
-            this.Input.ReadLine(); // Consumes empty line at the beginning of the file
-
-            while (this.Input.Peek() >= 0)
+            using (var p = new ExcelPackage(fi))
             {
-                Sample samp = this.ParseHeader();
-                this.ParseResults(samp);
-                this.ParseInternalStandards(samp);
-                this.AddSampleToList(samp);
-            }
+                var standardsws = p.Workbook.Worksheets[2];
+                int row = 1, col = 3, index = 0;
+                int blankCount = 0;
 
-            this.CombSampleList();
-            this.PassToDataLoader();
-        }
-
-
-        /* Private Methods */
-
-
-        // SampleGroup, Sample & Element creation
-
-
-        private SampleGroup CreateSampleGroup (List<Sample> sampleList, string name, bool skipFirst)
-        {
-            if (sampleList == null || name == null)
-                throw new ArgumentException("The SampleGroup you are trying to create will contain a null member variable\n");
-
-            return new SampleGroup(sampleList, name, skipFirst);
-        }
-
-
-        private Sample CreateSample (string method, string name, string comment, string runTime, string sampleType, Int32 repeats)
-        {
-            if (method == null || name == null || comment == null || runTime == null || sampleType == null || repeats < 0)
-                throw new ArgumentNullException("The Sample you are trying to create will contain a null member variable\n");
-
-            return new Sample(method, name, comment, runTime, sampleType, repeats); // TODO see sample constructors
-        }
-
-        
-        private Element CreateElement (string name, string units, Double avg, Double stddev, Double rsd)
-        {
-            if (name == null || units == null)
-                throw new ArgumentNullException("The Element you are trying to instantiate will contain a null member variable\n");
-
-            return new Element(name, units, avg, stddev, rsd);
-        }
-
-
-        private void AddElementToSample (Sample sample, Element element)
-        {
-            if (sample == null)
-                throw new ArgumentNullException("The sample you are attempting to add an element to is null\n");
-            else if (element == null)
-                throw new ArgumentNullException("The element you are attempting to add to the sample is null\n");
-
-            sample.Elements.Add(element);
-        }
-
-
-        // Parse() helper methods
-
-
-        private Sample ParseHeader ()
-        {
-            Sample sample;
-            List<string> stringList = new List<string>();
-            string tmp;
-
-            if (this.Input.Peek() >= 0)
-                this.Input.ReadLine(); // Consumes "[Sample Header]"
-            else
-                throw new FormatException("The file used as input is not formatted correctly.\n");
-
-            if (this.Input.Peek() >= 0) // Start reading in sample meta data
-            {
-                tmp = this.Input.ReadLine();
-
-                while (!(string.IsNullOrEmpty(tmp)))
-                {
-                    stringList.Add(tmp);
-
-                    if (this.Input.Peek() >= 0)
-                        tmp = this.Input.ReadLine();
-                    else
-                        throw new FormatException("The file used as input is not formatted correctly.\n");
+                // Find all element names
+                List<String> elementNames = new List<string>();
+                while (standardsws.Cells[3, col].Value != null)
+                { 
+                    elementNames.Add(standardsws.Cells[3, col].Value.ToString());
+                    col++;
                 }
 
-                if (stringList.Count != 12)
-                    throw new FormatException("The file used as input is not formatted correctly.\n");
-            }
-            else
-                throw new FormatException("The file used as input is not formatted correctly. ParseHeader4\n");
+                col = 3;
 
-            stringList[1] = stringList[1].Replace("SampleName=", ""); // SampleName trimming
-            stringList[3] = stringList[3].Replace("Comment=", ""); // Comment trimming
-            stringList[7] = stringList[7].Substring(stringList[7].IndexOf(' ', 4)); // Getting the correct format for the time
-            stringList[8] = stringList[8].Replace("Sample Type=", ""); // SampleType trimming
-            stringList[11] = stringList[11].Replace("Repeats=", ""); // Repeats trimming
-
-            sample = CreateSample(stringList[0], stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // TODO int.Parse() throws a FormatException (not a number)
-
-            return sample;
-        }
-
-
-        private void ParseResults (Sample sample)
-        {
-            this.CheckForNullSample(sample);
-            List<string> stringList = new List<string>();
-            string tmp;
-
-            for (int x = 0; x < 2; x++) // Consumes line containing "[Results]", line containing labels for elements "Elem,Units,Avg,Stddev,RSD"
-            {
-                if (this.Input.Peek() >= 0)
-                    this.Input.ReadLine();
-                else
-                    throw new FormatException("The file used as input is not formatted correctly\n");
-            }
-
-            if (this.Input.Peek() >= 0) // Start reading in elements data
-            {
-                tmp = this.Input.ReadLine();
-
-                while (!(string.IsNullOrEmpty(tmp)))
+                // Find Continuing Calibration Verification (CCV) section
+                while (blankCount < 5)
                 {
-                    stringList.Add(tmp);
-
-                    if (this.Input.Peek() >= 0)
-                        tmp = this.Input.ReadLine();
-                    else
-                        throw new FormatException("The file used as input is not formatted correctly.\n");
-                }
-            }
-
-            foreach (string str in stringList) // Data scrubbing and Element creation
-            {
-                string[] strArray = str.Split(',');
-
-                double avg;
-                double stddev;
-                double rsd;
-
-                strArray[2] = strArray[2].Replace(" ", ""); // Removes the whitespace character in front avgs
-
-                if (!(double.TryParse(strArray[2], out avg)))
-                    avg = Double.NaN;
-                if (!(double.TryParse(strArray[3], out stddev)))
-                    stddev = Double.NaN;
-                if (!(double.TryParse(strArray[4], out rsd)))
-                    rsd = Double.NaN;
-
-                Element newElement = this.CreateElement(strArray[0], strArray[1], avg, stddev, rsd);
-                this.AddElementToSample(sample, newElement);
-            }
-        }
-
-
-        private void ParseInternalStandards (Sample sample)
-        {
-            this.CheckForNullSample(sample);
-
-            string str;
-            string[] strList;
-
-            if (this.Input.Peek() >= 0)
-                this.Input.ReadLine(); // Consumes line containing "[Internal Standards]"
-            else
-                throw new FormatException("The file used as input is not formatted correctly.\n");
-
-            if (this.Input.Peek() >= 0)
-            {
-                str = this.Input.ReadLine();
-                strList = str.Split(','); // Do something with this?
-                this.Input.ReadLine(); // Consumes empty line after Internal Standards section
-            }
-        }
-
-
-        private void AddSampleToList (Sample samp)
-        {
-            this.CheckForNullSample(samp);
-
-            if (string.Compare(samp.SampleType, "Cal") == 0)
-                this.CalibrationStandardsList.Add(samp); // CalibStd
-            else if (samp.Name.StartsWith("CCV"))
-                this.QualityControlSamplesList.Add(samp); // CCV
-            else if (string.Compare(samp.Name, "Instrument Blank") == 0)
-                this.CalibrationSamplesList.Add(samp); // Assuming all Calibration Samples will be named "Instrument Blank"
-            else if (string.Compare(samp.SampleType, "QC") == 0)
-            {
-                if (this.CertifiedValueList.Count == 0)
-                    this.CreateNewCertifiedValueSubList(samp);
-                else
-                {
-                    foreach (List<Sample> sampleList in this.CertifiedValueList)
+                    if (standardsws.Cells[row, 1].Value != null)
                     {
-                        if (samp.Name.StartsWith(sampleList[0].Name.Substring(0, 4))) //
-                            sampleList.Add(samp);
+                        if (!standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("continuing calibration verification (ccv)"))
+                        {
+                            row++;
+                            blankCount = 0;
+                        }
+
                         else
-                            this.CreateNewCertifiedValueSubList(samp);
+                            break;
+                    }
+
+                    else
+                    {
+                        blankCount++;
+                        row++;
+                    }
+                }
+
+                if (blankCount > 4)
+                    throw new ConfigurationErrorException("Could not find \"Continuing Calibration Verification (CCV)\" section in CheckStandards.xlsx config file.");
+
+                row++;
+
+                Sample calibstd = new Sample("", "CCV Standard", "", "QC", 0);
+                while(standardsws.Cells[row, col].Value != null)
+                {
+                    calibstd.Elements.Add(new Element(elementNames[index], "mg/L", Double.Parse(standardsws.Cells[row, col].Value.ToString()), 0.0, 0.0));
+                    col++;
+                    index++;
+                }
+
+                this.QualityControlSamples.Add(calibstd);
+
+                // Find Check Standards section
+                row = 1;
+                index = 0;
+                blankCount = 0;
+                while (blankCount < 5)
+                {
+                    if (standardsws.Cells[row, 1].Value != null)
+                    {
+                        if (!standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("check standards"))
+                        {
+                            row++;
+                            blankCount = 0;
+                        }
+
+                        else
+                            break;
+                    }
+
+                    else
+                    {
+                        blankCount++;
+                        row++;
+                    }
+                }
+
+                if (blankCount > 4)
+                    throw new ConfigurationErrorException("Could not find \"Check Standards\" section in CheckStandards.xlsx config file.");
+
+                row++;
+
+                while(standardsws.Cells[row, 1].Value != null)
+                {
+                    col = 3;
+                    List<Sample> sg = new List<Sample>();
+                    Sample checkstd = new Sample("", standardsws.Cells[row, 1].Value.ToString(), "", "QC", 0);
+                    
+                    while(standardsws.Cells[row, col].Value != null)
+                    {
+                        checkstd.Elements.Add(new Element(elementNames[index], "mg/L", Double.Parse(standardsws.Cells[row, col].Value.ToString()), 0.0, 0.0));
+                        col++;
+                    }
+
+                    row++;
+                    sg.Add(checkstd);
+                    this.CertifiedValueSamples.Add(sg);
+                }
+                #endregion
+            }
+        }
+        #endregion
+
+        #region Public Methods
+        public void Parse()
+        {
+            Sample s;
+            this.Input.ReadLine(); // Consume first empty line;
+
+            #region Reading file and Creating Samples
+            while(this.Input.Peek() > -1)
+            {
+                // Parse [Sample Header] 
+                String line = this.Input.ReadLine();
+                if (!line.Equals("[Sample Header]"))
+                    throw new FormatException("Error reading ICP-AES output file. Please make sure the input file has not been changed.");
+
+                String method = this.Input.ReadLine();
+                String sname = this.Input.ReadLine();
+                this.Input.ReadLine(); // Username
+                String comment = this.Input.ReadLine();
+                this.Input.ReadLine(); // ID 1
+                this.Input.ReadLine(); // ID 2
+                this.Input.ReadLine(); // ID 3
+                String runtime = this.Input.ReadLine();
+                String type = this.Input.ReadLine();
+                this.Input.ReadLine(); // Mode
+                this.Input.ReadLine(); // CorrFactor
+                String repeats = this.Input.ReadLine();
+
+                s = new Sample(method.Split('=')[1], sname.Split('=')[1], comment.Split('=')[1], runtime.Split('=')[1], type.Split('=')[1], Int32.Parse(repeats.Split('=')[1]));
+                line = this.Input.ReadLine(); // Consume empty line
+
+                if(!line.Equals(""))
+                    throw new FormatException("Error reading ICP-AES output file. Please make sure the input file has not been changed.");
+
+                // Parse [Results]
+                line = this.Input.ReadLine();
+                if (!line.Equals("[Results]"))
+                    throw new FormatException("Error reading ICP-AES output file. Please make sure the input file has not been changed.");
+
+                this.Input.ReadLine(); // Consumes column header line
+
+                while(!(line = this.Input.ReadLine()).Equals("")) // Adding elements
+                {
+                    String[] elementLine = line.Split(',');
+                    if (elementLine.Length < 5)
+                        throw new FormatException("Error reading ICP-AES element data at " + elementLine[0] + ". Please make sure the input file has not been changed.");
+
+                    String elem = elementLine[0];
+                    String units = elementLine[1];
+                    String avg = elementLine[2];
+                    String stddev = elementLine[3];
+                    String rsd = elementLine[4];
+
+                    // Input cleaning
+                    if (units.Equals("ppm"))
+                        units = "mg/L";
+
+                    if (avg.Contains("*") || stddev.Contains("-") || rsd.Contains("-")) // Some elements have no data
+                    {
+                        avg = "0";
+                        stddev = "0";
+                        rsd = "0";
+                    }
+
+                    else
+                    {
+                        var pattern = @"[a-zA-Z]+\s+"; // Some elements have an 'F' at the start of their data...
+                        avg = Regex.Replace(avg, pattern, "");
+                        stddev = Regex.Replace(stddev, pattern, "");
+                        rsd = Regex.Replace(rsd, pattern, "");
+
+                        avg.Trim();
+                        stddev.Trim();
+                        rsd.Trim();
+                    }
+
+                     s.Elements.Add(new Element(elem, units, Convert.ToDouble(avg), Convert.ToDouble(stddev), Convert.ToDouble(rsd)));
+                }
+
+                // Consume [Internal Standards]
+                this.Input.ReadLine(); // [Internal Standards]
+                this.Input.ReadLine(); // Elem,Units,Avg,Stddev,RSD
+                this.Input.ReadLine(); // Empty line
+
+                // Add sample to correct list
+                switch(s.SampleType)
+                {
+                    case "Cal":
+                        this.CalibrationStandards.Add((Sample)s.Clone());
+                        break;
+
+                    case "QC":
+                        CheckForQCSampleType(s, false);
+                        break;
+
+                    case "Unk":
+                        CheckForQCSampleType(s, true);
+                        break;
+
+                    default:
+                        throw new FormatException("Error: Unexpected sampe type encountered: " + s.SampleType);
+                }
+
+                s = null;
+            }
+            #endregion
+
+            #region Adding Sample Lists to Loader
+            this.Loader.AddCalibrationSampleGroup(new SampleGroup(this.CalibrationSamples, "Instrument Blanks", false));
+            this.Loader.AddCalibrationStandard(new SampleGroup(this.CalibrationStandards, "Calibration Standards", false));
+            this.Loader.AddQualityControlSampleGroup(new SampleGroup(this.QualityControlSamples, "Stated Values", true));
+
+            foreach(List<Sample> l in this.CertifiedValueSamples)
+                this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(l, "Certified Values", true));
+
+            foreach (List<Sample> l in this.Samples)
+                this.Loader.AddSampleGroup(new SampleGroup(l, l[0].Name, false));
+            #endregion
+        }
+        #endregion
+
+        #region Private Methods
+        private void CheckForQCSampleType(Sample s, bool unkown)
+        {
+            bool flag = false;
+
+            if (s.Name.Contains("Instrument Blank")) // Sample is a quality control blank
+                this.CalibrationSamples.Add((Sample)s.Clone());
+
+            else if (s.Name.Contains("CCV")) // Sample is a continuing verification sample
+                this.QualityControlSamples.Add((Sample)s.Clone());
+
+            else
+            {
+                foreach (List<Sample> sg in this.CertifiedValueSamples) // Check if Sample is a certified value sample
+                {
+                    if (s.Name.Contains(sg[0].Name))
+                    {
+                        sg.Add((Sample)s.Clone());
+                        flag = true;
+                    }
+                }
+
+                if (!flag && !unkown) // Sample is an unkown certified value
+                    Console.WriteLine("\tWarning: Encountered a Certified Value sample whose check standards were not present in the CheckStandards.xlsx config file. Sample data will be missing from output file.");
+
+                if(!flag) // Sample is a generic sample
+                {
+                    flag = false;
+                    foreach (List<Sample> sg in this.Samples)
+                    {
+                        if (s.Name.Contains(sg[0].Name.Split(' ')[0]))
+                        {
+                            sg.Add((Sample)s.Clone());
+                            flag = true;
+                        }
+                    }
+
+                    if (!flag)
+                    {
+                        List<Sample> newsg = new List<Sample>();
+                        newsg.Add((Sample)s.Clone());
+                        this.Samples.Add(newsg);
                     }
                 }
             }
-            else if (string.Compare(samp.SampleType, "Unk") == 0)
-            {
-                if (this.SampleList.Count == 0)
-                    this.CreateNewSampleSubList(samp);
-                else
-                {
-                    foreach (List<Sample> sampleList in this.SampleList)
-                    {
-                        if (samp.Name.StartsWith(sampleList[0].Name.Substring(0, 4))) //
-                            sampleList.Add(samp);
-                        else
-                            this.CreateNewSampleSubList(samp);
-                    }
-                }
-            }
         }
-
-
-        private void PassToDataLoader ()
-        {
-            foreach (List<Sample> sampleList in this.CertifiedValueList)
-                this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(sampleList, "Certified Values", true));
-
-            foreach (List<Sample> sampleList in this.SampleList)
-                this.Loader.AddSampleGroup(new SampleGroup(sampleList, "Samples", false));
-
-            this.Loader.AddCalibrationStandard(this.CreateSampleGroup(this.CalibrationStandardsList, "Calibration Standards", false)); // CalibStd
-            this.Loader.AddCalibrationSampleGroup(this.CreateSampleGroup(this.CalibrationSamplesList, "Quality Control Solutions", false)); // Instrument Blank
-            this.Loader.AddQualityControlSampleGroup(this.CreateSampleGroup(this.QualityControlSamplesList, "Stated Value", true)); // CCV
-        }
-
-
-        private void CombSampleList () // This method will comb through List<List<Sample>> SampleList and pull out certified value samples that have sample type "Unk", placing them in List<List<Sample>> CertifiedValueList
-        {
-            /*foreach (List<Sample> sampleList in this.SampleList)
-            {
-                foreach (List<Sample> certifiedValueList in this.CertifiedValueList)
-                {
-                    if (sampleList[0].Name.StartsWith(certifiedValueList[0].Name.Substring(0, 4)))
-                        // 
-                }
-            }*/
-        }
-
-
-        private void CreateNewCertifiedValueSubList (Sample samp)
-        {
-            List<Sample> tempList = new List<Sample>();
-            tempList.Add(samp);
-            this.CertifiedValueList.Add(tempList); // Soil B, TMDW etc.
-        }
-
-
-        private void CreateNewSampleSubList (Sample samp)
-        {
-            List<Sample> tempList = new List<Sample>();
-            tempList.Add(samp);
-            this.SampleList.Add(tempList);
-        }
-
-
-        private void CheckForNullSample (Sample samp)
-        {
-            if (samp == null)
-                throw new ArgumentNullException("The sample that was passed in is null\n");
-        }
+        #endregion
     }
 }

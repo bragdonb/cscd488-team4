@@ -13,7 +13,7 @@ namespace WaterAnalysisTool.Loader
     class DataLoader
     {
         #region Attributes
-        private SampleGroup CalibrationSamples;             // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
+        private SampleGroup CalibrationSamples;             // Quality Control Solutions (Instrument Blanks) -> Sample Type: QC
         private SampleGroup CalibrationStandards;           // Calibration Standard -> Sample Type: Cal
         private SampleGroup QualityControlSamples;          // Stated Values (CCV) -> Sample Type: QC
         private List<SampleGroup> CertifiedValueSamples;    // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC
@@ -100,12 +100,12 @@ namespace WaterAnalysisTool.Loader
             if(CalibrationSamples.Samples.Count > 0)
                 row = WriteSamples(dataws, CalibrationSamples, nameof(CalibrationSamples), row);
 
-            if(QualityControlSamples.Samples.Count > 0)
+            if(QualityControlSamples.Samples.Count > 1) // Don't want to include CCV Standard samples with no measured sample data
                 row = WriteSamples(dataws, QualityControlSamples, nameof(QualityControlSamples), row);
 
             foreach (SampleGroup g in CertifiedValueSamples)
             {
-                if (g.Samples.Count > 0)
+                if (g.Samples.Count > 1) // Don't want to include Check Standards samples with no measured sample data
                     row = WriteSamples(dataws, g, nameof(CertifiedValueSamples), row);
             }
 
@@ -127,6 +127,7 @@ namespace WaterAnalysisTool.Loader
             var calibws = this.Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
             WriteStandards(calibws, CalibrationStandards);
 
+            this.Input.Close();
             this.Output.Save();
 
             this.Messages.Add("Formatted Excel sheet generated successfullly.");
@@ -379,6 +380,7 @@ namespace WaterAnalysisTool.Loader
                                                 dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.DodgerBlue);
                                 }
 
+                                /* TODO fix me
                                 // REQ-S3R5, 4th in heirarchy
                                 else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
                                 {
@@ -387,6 +389,7 @@ namespace WaterAnalysisTool.Loader
                                     dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Firebrick);
                                     flag = true;
                                 }
+                                */
 
                                 // REQ-S3R6, 5th in heirarchy
                                 else if (!flag)
