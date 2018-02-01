@@ -376,6 +376,7 @@ namespace WaterAnalysisTool
                 {
                     //Console.WriteLine("\t" + e.Message);
                     Console.WriteLine("\t" + e.GetType() + " " + e.Message);
+                    Console.WriteLine("\t" + e.ToString());
                 }
 
                 Console.WriteLine(); // Some formatting
