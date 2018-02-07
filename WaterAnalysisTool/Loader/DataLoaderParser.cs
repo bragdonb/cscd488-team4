@@ -129,7 +129,7 @@ namespace WaterAnalysisTool.Loader
 
                 while (ews.Cells[row, col].Value != null)
                 {
-                    elementNames.Add(ews.Cells[row, col].Value.ToString()); // Make a list of element names for creation of List<Element> to add to the sample
+                    elementNames.Add(ews.Cells[row, col].Value.ToString()); // Make a list of element names for reference & creation of List<Element> to add to the sample
                     analyteCounter++;
                     col++;
                 }
@@ -140,7 +140,9 @@ namespace WaterAnalysisTool.Loader
 
                 while (blankCounter < 4)
                 {
-                    if (ews.Cells[row, col].Value == null)
+                    if (row > 14)
+                        throw new ConfigurationErrorException("Could not find Continuing Calibration Verification (CCV) section in CheckStandars.xlsx config file.");
+                    else if (ews.Cells[row, col].Value == null)
                     {
                         blankCounter++;
                         row++;
@@ -149,14 +151,11 @@ namespace WaterAnalysisTool.Loader
                         row++;
                 }
 
-                //while (ews.Cells[row, col].Value != null && !(ews.Cells[row, col].Value.ToString().ToLower().Equals("continuing calibration verification (ccv)")))
-                    //row++;
-
-                //if (row > 14)
-                    //throw new ConfigurationErrorException("Could not find Continuing Calibration Verification (CCV) section in CheckStandards.xlsx config file.");
-                if (ews.Cells[row, col].Value.ToString().ToLower().Equals("continuing calibration verification (ccv)"))
+                if (ews.Cells[row, col].Value.ToString().ToLower().Equals("continuing calibration verification (ccv)")) // parsing CCV section
                 {
-                    while (ews.Cells[row, col].Value != null) // parsing CCV section
+                    row++;
+
+                    while (ews.Cells[row, col].Value != null)
                     {
                         sampleName = ews.Cells[row, col].Value.ToString(); // Reads in the name of the sample
                         List<Element> ccvTmpList = new List<Element>();
@@ -176,30 +175,35 @@ namespace WaterAnalysisTool.Loader
                         col = 1;
                     }
                 }
+                else
+                    throw new ConfigurationErrorException("Could not find Continuing Calibration Verification (CCV) section in CheckStandars.xlsx config file.");
 
-                // need condition here to check if file is formatted correctly
-
-                while (ews.Cells[row, col].Value != null) // parsing check standards section
+                if (ews.Cells[row, col].Value.ToString().ToLower().Equals("check standards")) // parsing check standards section
                 {
-                    sampleName = ews.Cells[row, col].Value.ToString();
-                    List<Element> checkStandardsTmpList = new List<Element>();
-
-                    for (col = 3; col < analyteCounter + 2; col++)
+                    while (ews.Cells[row, col].Value != null)
                     {
-                        if (!(double.TryParse(ews.Cells[row, col].Value.ToString(), out avg)))
-                            avg = Double.NaN;
+                        sampleName = ews.Cells[row, col].Value.ToString();
+                        List<Element> checkStandardsTmpList = new List<Element>();
 
-                        tmpElem = new Element(elementNames[col - 3], "mg/L", avg, Double.NaN, Double.NaN);
-                        checkStandardsTmpList.Add(tmpElem);
+                        for (col = 3; col < analyteCounter + 2; col++)
+                        {
+                            if (!(double.TryParse(ews.Cells[row, col].Value.ToString(), out avg)))
+                                avg = Double.NaN;
+
+                            tmpElem = new Element(elementNames[col - 3], "mg/L", avg, Double.NaN, Double.NaN);
+                            checkStandardsTmpList.Add(tmpElem);
+                        }
+
+                        tmpSample = new Sample("", sampleName, "", "", "QC", 0);
+                        List<Sample> certifiedValueTmpList = new List<Sample>();
+                        certifiedValueTmpList.Add(tmpSample);
+                        this.CertifiedValueList.Add(certifiedValueTmpList);
+                        row++;
+                        col = 1;
                     }
-
-                    tmpSample = new Sample("", sampleName, "", "", "QC", 0);
-                    List<Sample> certifiedValueTmpList = new List<Sample>();
-                    certifiedValueTmpList.Add(tmpSample);
-                    this.CertifiedValueList.Add(certifiedValueTmpList);
-                    row++;
-                    col = 1;
                 }
+                else
+                    throw new ConfigurationErrorException("Could not find Check Standards section in CheckStandards.xlsx config file.");
             }
         }
 
