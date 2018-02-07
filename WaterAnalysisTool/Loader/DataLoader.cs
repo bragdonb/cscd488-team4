@@ -266,62 +266,6 @@ namespace WaterAnalysisTool.Loader
 
                                 // Write RSD
                                 dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
-
-                                // Do QA/QC formatting to analyte concentrations
-                                #region QA/AC Formatting
-                                if (type == "Samples")
-                                {
-
-                                    // REQ-S3R7, lowest in heirarchy
-                                    dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Green);
-
-                                    // REQ-S3R2, 1st in heirarchy
-                                    if (e.Average > this.CalibrationSamples.LOD[count])
-                                    {
-                                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Firebrick);
-                                        flag = true;
-                                    }
-
-                                    // REQ-S3R3, 2nd in heirarchy
-                                    else if (e.Average < this.CalibrationSamples.LOQ[count] && e.Average > this.CalibrationSamples.LOD[count])
-                                    {
-                                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Orange);
-                                        flag = true;
-                                    }
-
-                                    // REQ-S3R4, 3rd in heirarchy
-                                    else if (!flag)
-                                    {
-                                        foreach (SampleGroup g in this.CertifiedValueSamples)
-                                            if (g.Average[count] < e.Average + 0.5 && g.Average[count] > e.Average - 0.5)
-                                                if (g.Recovery[count] > 110 || g.Recovery[count] < 90)
-                                                    dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.DodgerBlue);
-                                    }
-
-                                    // REQ-S3R5, 4th in heirarchy
-                                    else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
-                                    {
-                                        dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Black);
-                                        dataws.Cells[row, col + 1].Style.Fill.BackgroundColor.SetColor(Color.Firebrick);
-                                        flag = true;
-                                    }
-
-                                    // REQ-S3R6, 5th in heirarchy
-                                    else if (!flag)
-                                    {
-                                        Double highest = 0.0;
-
-                                        foreach (Sample std in this.CalibrationStandards.Samples)
-                                        {
-                                            if (std.Elements[count].Average > highest)
-                                                highest = std.Elements[count].Average;
-                                        }
-
-                                        if (e.Average > highest)
-                                            dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.BlueViolet);
-                                    }
-                                }
-                                #endregion
                             }
 
                             col++;
@@ -340,7 +284,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         count++;
 
-                        if (e.Average != -1) // won't bother with cells where data does not exist (assumes parser set average in elements with no data to -1)
+                        if (e.Average != Double.NaN) // Won't bother with cells where data does not exist (assumes parser set average in elements with no data to Double.Nan)
                         {
                             // Write Analyte concentrations
                             dataws.Cells[row, col + 1].Value = e.Average;
@@ -357,14 +301,14 @@ namespace WaterAnalysisTool.Loader
                                 dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Green);
 
                                 // REQ-S3R2, 1st in heirarchy
-                                if (e.Average > this.CalibrationSamples.LOD[count])
+                                if (e.Average < this.CalibrationSamples.LOD[count - 1])
                                 {
                                     dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Firebrick);
                                     flag = true;
                                 }
 
                                 // REQ-S3R3, 2nd in heirarchy
-                                else if (e.Average < this.CalibrationSamples.LOQ[count] && e.Average > this.CalibrationSamples.LOD[count])
+                                else if (e.Average < this.CalibrationSamples.LOQ[count - 1] && e.Average > this.CalibrationSamples.LOD[count - 1])
                                 {
                                     dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Orange);
                                     flag = true;
@@ -374,13 +318,13 @@ namespace WaterAnalysisTool.Loader
                                 else if (!flag)
                                 {
                                     foreach (SampleGroup g in this.CertifiedValueSamples)
-                                        if (g.Average[count] < e.Average + 0.5 && g.Average[count] > e.Average - 0.5)
-                                            if (g.Recovery[count] > 110 || g.Recovery[count] < 90)
+                                        if (g.Average[count - 1] < e.Average + 0.5 && g.Average[count - 1] > e.Average - 0.5)
+                                            if (g.Recovery[count - 1] > 110 || g.Recovery[count - 1] < 90)
                                                 dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.DodgerBlue);
                                 }
 
                                 // REQ-S3R5, 4th in heirarchy
-                                else if (this.CalibrationSamples.Average[count] > 0.05 * e.Average)
+                                else if (this.CalibrationSamples.Average[count - 1] > 0.05 * e.Average)
                                 {
                                     dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Black);
                                     dataws.Cells[row, col + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
@@ -396,7 +340,7 @@ namespace WaterAnalysisTool.Loader
                                     foreach (Sample std in this.CalibrationStandards.Samples)
                                     {
                                         if (std.Elements[count].Average > highest)
-                                            highest = std.Elements[count].Average;
+                                            highest = std.Elements[count - 1].Average;
                                     }
 
                                     if (e.Average > highest)
@@ -683,7 +627,7 @@ namespace WaterAnalysisTool.Loader
                         elemCol++;
                     }
 
-                    endRow++;
+                    endRow += 2;
                     int startRow = endRow;
                     int numStandards = 0;
 
@@ -704,12 +648,12 @@ namespace WaterAnalysisTool.Loader
                     calCurve.SetSize(600, 400);
                     calCurve.YAxis.MinValue = 0;
                     calCurve.XAxis.MinValue = 0;
-                    //calCurve.Legend.Remove();
                     
                     ExcelRange yrange = null, xrange = null;
                     ExcelChartSerie s = null;
 
                     bool found = false;
+                    int seriesIndex = 0; // for naming the series
 
                     // Search through Standard element names to match up with Sample element names, and graph them
                     for (int sampleElementCol = 3; calibws.Cells[2, sampleElementCol].Value != null; sampleElementCol++)
@@ -718,21 +662,24 @@ namespace WaterAnalysisTool.Loader
                         for (int standardElementCol = 3; standardElementCol < elemCol && !found; standardElementCol++)
                         {
                             //startRow = beginning of standards section
-                            if (calibws.Cells[2, sampleElementCol].Value.Equals(calibws.Cells[startRow - 1, standardElementCol].Value))
+                            if (calibws.Cells[2, sampleElementCol].Value.Equals(calibws.Cells[startRow - 2, standardElementCol].Value))
                             {
                                 //you found the matching one, graph it!
                                 found = true;
 
-                                yrange = calibws.Cells[4, sampleElementCol, 3+numSamples, sampleElementCol];
+                                yrange = calibws.Cells[4, sampleElementCol, 3 + numSamples, sampleElementCol];
                                 xrange = calibws.Cells[startRow, standardElementCol, numStandards + startRow - 1, standardElementCol];
 
                                 s = calCurve.Series.Add(yrange, xrange);
+                                calCurve.Series[seriesIndex].Header = calibws.Cells[2, sampleElementCol].Value.ToString(); // names each series                              
                                 s.TrendLines.Add(eTrendLine.Linear);
+                                seriesIndex++;
                                 // TODO: find a way to hide the trendline equation (?)
                             }
                         }
                     }
-                                        
+
+
                     yrange = calibws.Cells[endRow - 1, 2, endRow - 1, col];
                     xrange = calibws.Cells[endRow, 2, endRow, col];
 
