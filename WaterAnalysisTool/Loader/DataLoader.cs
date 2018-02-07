@@ -283,7 +283,7 @@ namespace WaterAnalysisTool.Loader
                     foreach (Element e in s.Elements)
                     {
                         count++;
-
+                        
                         if (e.Average != -1) // won't bother with cells where data does not exist (assumes parser set average in elements with no data to -1)
                         {
                             // Write Analyte concentrations

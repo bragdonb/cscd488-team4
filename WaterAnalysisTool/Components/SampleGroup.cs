@@ -110,17 +110,17 @@ namespace WaterAnalysisTool.Components
             if (skipFirst)
                 firstRow = true;
 
+            foreach (Element e in this.samples[0].Elements)
+            {
+                this.lod.Add(0.0);
+                this.loq.Add(0.0);
+                this.rsd.Add(0.0);
+            }
+
             foreach (Sample s in this.samples) // start at row + 1
             {
                 count++;
                 index = 0;
-
-                foreach (Element e in s.Elements)
-                {
-                    this.lod.Add(0.0);
-                    this.loq.Add(0.0);
-                    this.rsd.Add(0.0);
-                }
 
                 if (!firstRow)
                 {
@@ -136,14 +136,15 @@ namespace WaterAnalysisTool.Components
 
             for (index = 0; index < this.average.Count; index++)
             {
-                this.lod[index] = 3 * Math.Sqrt(this.lod[index] / count);
-                this.loq[index] = 10 * Math.Sqrt(this.lod[index] / count);
-                this.rsd[index] = (Math.Sqrt(this.lod[index] / count)) / this.average[index] * 100;
+                double sum = this.lod[index];
+                this.lod[index] = 3 * Math.Sqrt(sum / count - 1);
+                this.loq[index] = 10 * Math.Sqrt(sum / count - 1);
+                this.rsd[index] = (Math.Sqrt(sum / count - 1)) / this.average[index] * 100;
             }
 
         }//end CalculateLODandLOQandRSD()
 
-        private void CalculatePercentDifference() // %difference = (mean - certified value) / certified value * 100
+        private void CalculatePercentDifference() // % difference = (mean - certified value) / certified value * 100
         {
             this.percentDifference = new List<Double>();
 
@@ -174,5 +175,6 @@ namespace WaterAnalysisTool.Components
             }
         }//CalculateRecovery()
         #endregion
+        
     }
 }
