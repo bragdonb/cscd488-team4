@@ -672,7 +672,9 @@ namespace WaterAnalysisTool.Loader
 
                                 s = calCurve.Series.Add(yrange, xrange);
                                 calCurve.Series[seriesIndex].Header = calibws.Cells[2, sampleElementCol].Value.ToString(); // names each series                              
-                                s.TrendLines.Add(eTrendLine.Linear);
+                                ExcelChartTrendline tl = s.TrendLines.Add(eTrendLine.Linear);
+                                tl.DisplayRSquaredValue = false;
+                                tl.DisplayEquation = false;
                                 seriesIndex++;
                                 // TODO: find a way to hide the trendline equation (?)
                             }
