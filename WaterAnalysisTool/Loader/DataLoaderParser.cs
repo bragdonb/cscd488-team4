@@ -17,8 +17,6 @@ namespace WaterAnalysisTool.Loader
         private DataLoader Loader;
         private StreamReader Input;
 
-        private List<string> CheckStandardsSampleNames;
-
         private List<Sample> CalibrationStandardsList; // Calibration Standard -> Sample Type: Cal, --- These go in the Calibration Standards worksheet.  Calib Blank, CalibStd
         private List<Sample> CalibrationSamplesList;  // Quality Control Solutions -> Sample Type: QC --- These are usually named Instrument Blank
         private List<Sample> QualityControlSamplesList;  // Stated Values (CCV) -> Sample Type: QC --- These will have CCV in the name
@@ -34,8 +32,6 @@ namespace WaterAnalysisTool.Loader
         {
             this.Loader = loader;
             this.Input = inf;
-
-            this.CheckStandardsSampleNames = new List<string>();
 
             this.CalibrationStandardsList = new List<Sample>(); // CalibStd
             this.CalibrationSamplesList = new List<Sample>(); // Instrument Blank
@@ -138,28 +134,39 @@ namespace WaterAnalysisTool.Loader
                     col++;
                 }
 
-                row = 4;
+                row = 1;
                 col = 1;
+                int blankCounter = 0;
 
-                while (ews.Cells[row, col].Value != null && !(ews.Cells[row, col].Value.ToString().ToLower().Equals("continuing calibration verification (ccv)")))
-                    row++;
-
-                if (row > 14)
-                    throw new ConfigurationErrorException("Could not find Continuing Calibration Verification (CCV) section in CheckStandards.xlsx config file.");
-                else // CCV parsing
+                while (blankCounter < 4)
                 {
-                    while (ews.Cells[row, col].Value != null)
+                    if (ews.Cells[row, col].Value == null)
+                    {
+                        blankCounter++;
+                        row++;
+                    }
+                    else
+                        row++;
+                }
+
+                //while (ews.Cells[row, col].Value != null && !(ews.Cells[row, col].Value.ToString().ToLower().Equals("continuing calibration verification (ccv)")))
+                    //row++;
+
+                //if (row > 14)
+                    //throw new ConfigurationErrorException("Could not find Continuing Calibration Verification (CCV) section in CheckStandards.xlsx config file.");
+                if (ews.Cells[row, col].Value.ToString().ToLower().Equals("continuing calibration verification (ccv)"))
+                {
+                    while (ews.Cells[row, col].Value != null) // parsing CCV section
                     {
                         sampleName = ews.Cells[row, col].Value.ToString(); // Reads in the name of the sample
-                        analyteCounter += 2; // Increment by two. Otherwise we could potentially miss the last two columns of analytes due to the value of the column (col) starting at 3 in the for loop below
                         List<Element> ccvTmpList = new List<Element>();
 
-                        for (col = 3; col < analyteCounter; col++)
+                        for (col = 3; col < analyteCounter + 2; col++) // Increment by two. Otherwise we could potentially miss the last two columns of analytes due to the value of the column (col) starting at 3 in the for loop
                         {
                             if (!(double.TryParse(ews.Cells[row, col].Value.ToString(), out avg)))
                                 avg = Double.NaN;
 
-                            tmpElem = new Element(elementNames[col - 3], "", avg, Double.NaN, Double.NaN); // Stddev and RSD get Double.NaN, assuming all values in CheckStandards are avg. Subtract columns (col) by 3 so that the correct corresponding element name is retrieved
+                            tmpElem = new Element(elementNames[col - 3], "mg/L", avg, Double.NaN, Double.NaN); // Stddev and RSD get Double.NaN, assuming all values in CheckStandards are avg. Subtract columns (col) by 3 so that the correct corresponding element name is retrieved
                             ccvTmpList.Add(tmpElem);
                         }
 
@@ -172,18 +179,17 @@ namespace WaterAnalysisTool.Loader
 
                 // need condition here to check if file is formatted correctly
 
-                while (ews.Cells[row, col].Value != null) // check standards parsing
+                while (ews.Cells[row, col].Value != null) // parsing check standards section
                 {
                     sampleName = ews.Cells[row, col].Value.ToString();
-                    this.CheckStandardsSampleNames.Add(sampleName);
                     List<Element> checkStandardsTmpList = new List<Element>();
 
-                    for (col = 3; col < analyteCounter; col++)
+                    for (col = 3; col < analyteCounter + 2; col++)
                     {
                         if (!(double.TryParse(ews.Cells[row, col].Value.ToString(), out avg)))
                             avg = Double.NaN;
 
-                        tmpElem = new Element(elementNames[col - 3], "", avg, Double.NaN, Double.NaN);
+                        tmpElem = new Element(elementNames[col - 3], "mg/L", avg, Double.NaN, Double.NaN);
                         checkStandardsTmpList.Add(tmpElem);
                     }
 
@@ -330,10 +336,10 @@ namespace WaterAnalysisTool.Loader
                     this.CreateNewCertifiedValueSubList(samp); // Probably won't need this anymore
                 else
                 {
-                    foreach (List<Sample> sampleList in this.CertifiedValueList)
+                    for (int x = 0; x < this.CertifiedValueList.Count; x++)
                     {
-                        if (samp.Name.StartsWith(sampleList[0].Name.Substring(0, 4))) // SoilB in the input txt file is SoilB. In the CheckStandards.xlsx it is Soil B. Makes it problematic for this line
-                            sampleList.Add(samp);
+                        if (samp.Name.StartsWith(this.CertifiedValueList[x][0].Name.Substring(0, 4))) // SoilB in the input txt file is SoilB. In the CheckStandards.xlsx it is Soil B. Makes it problematic for this line
+                            this.CertifiedValueList[x].Add(samp);
                         else
                             this.CreateNewCertifiedValueSubList(samp);
                     }
@@ -345,10 +351,10 @@ namespace WaterAnalysisTool.Loader
                     this.CreateNewSampleSubList(samp);
                 else
                 {
-                    foreach (List<Sample> sampleList in this.SampleList)
+                    for (int x = 0; x < this.SampleList.Count; x++)
                     {
-                        if (samp.Name.StartsWith(sampleList[0].Name.Substring(0, 4))) //
-                            sampleList.Add(samp);
+                        if (samp.Name.StartsWith(this.SampleList[x][0].Name.Substring(0, 4)))
+                            this.SampleList[x].Add(samp);
                         else
                             this.CreateNewSampleSubList(samp);
                     }
