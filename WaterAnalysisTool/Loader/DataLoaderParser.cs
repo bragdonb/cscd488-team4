@@ -157,19 +157,18 @@ namespace WaterAnalysisTool.Loader
 
                     while (ews.Cells[row, col].Value != null)
                     {
-                        sampleName = ews.Cells[row, col].Value.ToString(); // Reads in the name of the sample
-                        List<Element> ccvTmpList = new List<Element>();
+                        sampleName = ews.Cells[row, col].Value.ToString(); // Reads in the name of the sample. Name may need to be "Stated Value" (check the example output xlsx)
+                        tmpSample = new Sample("", sampleName, "", "", "QC", 0);
 
-                        for (col = 3; col < analyteCounter + 2; col++) // Increment by two. Otherwise we could potentially miss the last two columns of analytes due to the value of the column (col) starting at 3 in the for loop
+                        for (col = 3; col < analyteCounter + 3; col++) // Increment by three. Otherwise we could potentially miss the last two columns of analytes due to the value of the column (col) starting at 3 in the for loop
                         {
-                            if (!(double.TryParse(ews.Cells[row, col].Value.ToString(), out avg)))
+                            if (ews.Cells[row, col].Value == null || !(double.TryParse(ews.Cells[row, col].Value.ToString(), out avg)))
                                 avg = Double.NaN;
 
                             tmpElem = new Element(elementNames[col - 3], "mg/L", avg, Double.NaN, Double.NaN); // Stddev and RSD get Double.NaN, assuming all values in CheckStandards are avg. Subtract columns (col) by 3 so that the correct corresponding element name is retrieved
-                            ccvTmpList.Add(tmpElem);
+                            tmpSample.AddElement(tmpElem);
                         }
 
-                        tmpSample = new Sample("", sampleName, "", "", "QC", 0);
                         this.QualityControlSamplesList.Add(tmpSample);
                         row++;
                         col = 1;
@@ -178,23 +177,30 @@ namespace WaterAnalysisTool.Loader
                 else
                     throw new ConfigurationErrorException("Could not find Continuing Calibration Verification (CCV) section in CheckStandars.xlsx config file.");
 
-                if (ews.Cells[row, col].Value.ToString().ToLower().Equals("check standards")) // parsing check standards section
+                if (ews.Cells[row, col].Value == null)
                 {
+                    blankCounter++;
+                    row++;
+                }
+
+                if (blankCounter == 5 && ews.Cells[row, col].Value.ToString().ToLower().Equals("check standards")) // parsing check standards section
+                {
+                    row++;
+
                     while (ews.Cells[row, col].Value != null)
                     {
                         sampleName = ews.Cells[row, col].Value.ToString();
-                        List<Element> checkStandardsTmpList = new List<Element>();
+                        tmpSample = new Sample("", sampleName, "", "", "QC", 0);
 
-                        for (col = 3; col < analyteCounter + 2; col++)
+                        for (col = 3; col < analyteCounter + 3; col++)
                         {
-                            if (!(double.TryParse(ews.Cells[row, col].Value.ToString(), out avg)))
+                            if (ews.Cells[row, col].Value == null || !(double.TryParse(ews.Cells[row, col].Value.ToString(), out avg)))
                                 avg = Double.NaN;
 
                             tmpElem = new Element(elementNames[col - 3], "mg/L", avg, Double.NaN, Double.NaN);
-                            checkStandardsTmpList.Add(tmpElem);
+                            tmpSample.AddElement(tmpElem);
                         }
 
-                        tmpSample = new Sample("", sampleName, "", "", "QC", 0);
                         List<Sample> certifiedValueTmpList = new List<Sample>();
                         certifiedValueTmpList.Add(tmpSample);
                         this.CertifiedValueList.Add(certifiedValueTmpList);
@@ -327,6 +333,8 @@ namespace WaterAnalysisTool.Loader
         private void AddSampleToList (Sample samp)
         {
             this.CheckForNullSample(samp);
+            bool certifiedValue = false;
+            bool newSample = false;
 
             if (string.Compare(samp.SampleType, "Cal") == 0)
                 this.CalibrationStandardsList.Add(samp); // CalibStd
@@ -334,35 +342,35 @@ namespace WaterAnalysisTool.Loader
                 this.QualityControlSamplesList.Add(samp); // CCV
             else if (string.Compare(samp.Name, "Instrument Blank") == 0)
                 this.CalibrationSamplesList.Add(samp); // Assuming all Calibration Samples will be named "Instrument Blank"
-            else if (string.Compare(samp.SampleType, "QC") == 0)
+            else
             {
-                if (this.CertifiedValueList.Count == 0)
-                    this.CreateNewCertifiedValueSubList(samp); // Probably won't need this anymore
-                else
+                for (int x = 0; x < this.CertifiedValueList.Count; x++)
                 {
-                    for (int x = 0; x < this.CertifiedValueList.Count; x++)
-                    {
-                        if (samp.Name.StartsWith(this.CertifiedValueList[x][0].Name.Substring(0, 4))) // SoilB in the input txt file is SoilB. In the CheckStandards.xlsx it is Soil B. Makes it problematic for this line
-                            this.CertifiedValueList[x].Add(samp);
-                        else
-                            this.CreateNewCertifiedValueSubList(samp);
+                    if (samp.Name.StartsWith(this.CertifiedValueList[x][0].Name.Substring(0, 4))) // SoilB in the input txt file is SoilB. In the CheckStandards.xlsx it is Soil B. Makes it problematic for this line
+                    {                                                                              // Because of this condition there are duplicate TMDW lists, one list has a first sample named "TMDW", the other list has a first sample named "TMDW 1:10", Basically need a more robust condition here. The one sample named DFW 17-002 Dup is also in it's own list when it shouldn't be. This is a super long comment
+                        this.CertifiedValueList[x].Add(samp);
+                        certifiedValue = true;
                     }
                 }
-            }
-            else if (string.Compare(samp.SampleType, "Unk") == 0)
-            {
-                if (this.SampleList.Count == 0)
+
+                if (!certifiedValue && this.SampleList.Count == 0)
                     this.CreateNewSampleSubList(samp);
-                else
+                else if (!certifiedValue)
                 {
                     for (int x = 0; x < this.SampleList.Count; x++)
                     {
                         if (samp.Name.StartsWith(this.SampleList[x][0].Name.Substring(0, 4)))
+                        {
                             this.SampleList[x].Add(samp);
+                            newSample = false;
+                        }
                         else
-                            this.CreateNewSampleSubList(samp);
+                            newSample = true;
                     }
                 }
+
+                if (newSample)
+                    this.CreateNewSampleSubList(samp);
             }
         }
 
@@ -381,12 +389,12 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void CreateNewCertifiedValueSubList (Sample samp)
+        /* private void CreateNewCertifiedValueSubList (Sample samp)
         {
             List<Sample> tempList = new List<Sample>();
             tempList.Add(samp);
             this.CertifiedValueList.Add(tempList); // Soil B, TMDW etc.
-        }
+        } */
 
 
         private void CreateNewSampleSubList (Sample samp)
