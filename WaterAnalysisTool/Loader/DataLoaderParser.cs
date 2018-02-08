@@ -334,7 +334,7 @@ namespace WaterAnalysisTool.Loader
         {
             this.CheckForNullSample(samp);
             bool certifiedValue = false;
-            bool newSample = false;
+            bool newSample = true;
 
             if (string.Compare(samp.SampleType, "Cal") == 0)
                 this.CalibrationStandardsList.Add(samp); // CalibStd
@@ -353,23 +353,19 @@ namespace WaterAnalysisTool.Loader
                     }
                 }
 
-                if (!certifiedValue && this.SampleList.Count == 0)
-                    this.CreateNewSampleSubList(samp);
-                else if (!certifiedValue)
+                if (!certifiedValue)
                 {
                     for (int x = 0; x < this.SampleList.Count; x++)
                     {
-                        if (samp.Name.StartsWith(this.SampleList[x][0].Name.Substring(0, 4)))
+                        if (newSample && samp.Name.StartsWith(this.SampleList[x][0].Name.Substring(0, 4)))
                         {
                             this.SampleList[x].Add(samp);
                             newSample = false;
                         }
-                        else
-                            newSample = true;
                     }
                 }
 
-                if (newSample)
+                if (!certifiedValue && newSample)
                     this.CreateNewSampleSubList(samp);
             }
         }
@@ -387,14 +383,6 @@ namespace WaterAnalysisTool.Loader
             this.Loader.AddCalibrationSampleGroup(this.CreateSampleGroup(this.CalibrationSamplesList, "Quality Control Solutions", false)); // Instrument Blank
             this.Loader.AddQualityControlSampleGroup(this.CreateSampleGroup(this.QualityControlSamplesList, "Stated Value", true)); // CCV
         }
-
-
-        /* private void CreateNewCertifiedValueSubList (Sample samp)
-        {
-            List<Sample> tempList = new List<Sample>();
-            tempList.Add(samp);
-            this.CertifiedValueList.Add(tempList); // Soil B, TMDW etc.
-        } */
 
 
         private void CreateNewSampleSubList (Sample samp)
