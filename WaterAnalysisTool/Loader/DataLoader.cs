@@ -339,7 +339,7 @@ namespace WaterAnalysisTool.Loader
 
                                     foreach (Sample std in this.CalibrationStandards.Samples)
                                     {
-                                        if (std.Elements[count].Average > highest)
+                                        if (std.Elements[count - 1].Average > highest)
                                             highest = std.Elements[count - 1].Average;
                                     }
 
@@ -502,66 +502,6 @@ namespace WaterAnalysisTool.Loader
                 row++;
             }
 
-            /******************************************** TESTING *******************************************
-
-            calibws.Cells[4, 3].Value = 0;
-            calibws.Cells[5, 3].Value = 0.02;
-            calibws.Cells[6, 3].Value = 0.1;
-            calibws.Cells[7, 3].Value = 0.2;
-            calibws.Cells[8, 3].Value = 1;
-            calibws.Cells[9, 3].Value = 2;
-            calibws.Cells[10, 3].Value = 4;
-
-            calibws.Cells[4, 4].Value = 0;
-            calibws.Cells[5, 4].Value = 0.004;
-            calibws.Cells[6, 4].Value = 0.02;
-            calibws.Cells[7, 4].Value = 0.04;
-            calibws.Cells[8, 4].Value = 0.2;
-            calibws.Cells[9, 4].Value = 0.4;
-            calibws.Cells[10, 4].Value = 0.8;
-
-            calibws.Cells[4, 5].Value = 0;
-            calibws.Cells[5, 5].Value = 0.004;
-            calibws.Cells[6, 5].Value = 0.02;
-            calibws.Cells[7, 5].Value = 0.04;
-            calibws.Cells[8, 5].Value = 0.2;
-            calibws.Cells[9, 5].Value = 0.4;
-            calibws.Cells[10, 5].Value = 0.8;
-
-            calibws.Cells[4, 6].Value = 0;
-            calibws.Cells[5, 6].Value = 0.02;
-            calibws.Cells[6, 6].Value = 0.1;
-            calibws.Cells[7, 6].Value = 0.2;
-            calibws.Cells[8, 6].Value = 1;
-            calibws.Cells[9, 6].Value = 2;
-            calibws.Cells[10, 6].Value = 4;
-
-            calibws.Cells[4, 7].Value = 0;
-            calibws.Cells[5, 7].Value = 0.03;
-            calibws.Cells[6, 7].Value = 0.15;
-            calibws.Cells[7, 7].Value = 0.3;
-            calibws.Cells[8, 7].Value = 1.5;
-            calibws.Cells[9, 7].Value = 3;
-            calibws.Cells[10, 7].Value = 6;
-
-            calibws.Cells[4, 8].Value = 0;
-            calibws.Cells[5, 8].Value = 0.005;
-            calibws.Cells[6, 8].Value = 0.025;
-            calibws.Cells[7, 8].Value = 0.05;
-            calibws.Cells[8, 8].Value = 0.25;
-            calibws.Cells[9, 8].Value = 0.5;
-            calibws.Cells[10, 8].Value = 1;
-
-            calibws.Cells[4, 9].Value = 0;
-            calibws.Cells[5, 9].Value = 0.004;
-            calibws.Cells[6, 9].Value = 0.02;
-            calibws.Cells[7, 9].Value = 0.04;
-            calibws.Cells[8, 9].Value = 0.2;
-            calibws.Cells[9, 9].Value = 0.4;
-            calibws.Cells[10, 9].Value = 0.8;
-
-            /********************************************* END TESTING *********************************************/
-
             int numSamples = row - 4;
 
             int endRow = row + 2;
@@ -676,7 +616,6 @@ namespace WaterAnalysisTool.Loader
                                 tl.DisplayRSquaredValue = false;
                                 tl.DisplayEquation = false;
                                 seriesIndex++;
-                                // TODO: find a way to hide the trendline equation (?)
                             }
                         }
                     }
