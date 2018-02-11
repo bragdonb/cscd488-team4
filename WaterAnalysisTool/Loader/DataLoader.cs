@@ -6,6 +6,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Drawing.Chart;
 using WaterAnalysisTool.Components;
 using WaterAnalysisTool.Exceptions;
+using System.Text.RegularExpressions;
 
 namespace WaterAnalysisTool.Loader
 {
@@ -96,15 +97,15 @@ namespace WaterAnalysisTool.Loader
             // Write samples
             int row = 7; // Start at row 7, col 1
 
-            if(CalibrationSamples.Samples.Count > 0)
+            if(CalibrationSamples.Samples.Count > 1) // Don't want to write calibration samples with no data other than the known concentrations
                 row = WriteSamples(dataws, CalibrationSamples, nameof(CalibrationSamples), row);
 
-            if(QualityControlSamples.Samples.Count > 1) // Don't want to include CCV Standard samples with no measured sample data
+            if(QualityControlSamples.Samples.Count > 1) // Don't want to QC samples with no data other than the known concentrations
                 row = WriteSamples(dataws, QualityControlSamples, nameof(QualityControlSamples), row);
 
             foreach (SampleGroup g in CertifiedValueSamples)
             {
-                if (g.Samples.Count > 1) // Don't want to include Check Standards samples with no measured sample data
+                if (g.Samples.Count > 0)
                     row = WriteSamples(dataws, g, nameof(CertifiedValueSamples), row);
             }
 
@@ -126,7 +127,6 @@ namespace WaterAnalysisTool.Loader
             var calibws = this.Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
             WriteStandards(calibws, CalibrationStandards);
 
-            this.Input.Close();
             this.Output.Save();
 
             this.Messages.Add("Formatted Excel sheet generated successfullly.");
@@ -201,7 +201,7 @@ namespace WaterAnalysisTool.Loader
 
                     foreach(Element e in known.Elements)
                     {
-                        if (e.Average != -1) // assumes parser set average in elements with no data to -1
+                        if (e.Average != Double.NaN) // Assumes parser set average in elements with no data to Double.Nan
                         {
                             dataws.Cells[row, col].Value = e.Average;
                             dataws.Cells[row, col].Style.Font.Bold = true;
@@ -220,7 +220,7 @@ namespace WaterAnalysisTool.Loader
 
                     foreach (Element e in known.Elements)
                     {
-                        if (e.Average != -1) // assumes parse set average in elements with no data to -1
+                        if (e.Average != Double.NaN) // Assumes parse set average in elements with no data to Double.NaN
                         {
                             dataws.Cells[row, col].Value = e.Average;
                             dataws.Cells[row, col].Style.Font.Bold = true;
@@ -259,7 +259,7 @@ namespace WaterAnalysisTool.Loader
                         {
                             count++;
 
-                            if (e.Average != 0) // won't bother with cells where data does not exist (assumes parser set average in elements with no data to 0)
+                            if (e.Average != -1) // won't bother with cells where data does not exist (assumes parser set average in elements with no data to -1)
                             {
                                 // Write Analyte concentrations
                                 dataws.Cells[row, col + 1].Value = e.Average;
@@ -283,8 +283,8 @@ namespace WaterAnalysisTool.Loader
                     foreach (Element e in s.Elements)
                     {
                         count++;
-                        
-                        if (e.Average != -1) // won't bother with cells where data does not exist (assumes parser set average in elements with no data to -1)
+
+                        if (e.Average != Double.NaN) // Won't bother with cells where data does not exist (assumes parser set average in elements with no data to Double.Nan)
                         {
                             // Write Analyte concentrations
                             dataws.Cells[row, col + 1].Value = e.Average;
@@ -297,7 +297,7 @@ namespace WaterAnalysisTool.Loader
                             if (type == "Samples")
                             {
 
-                                // REQ-S3R7, lowest in heirarchy, gets overwritten if something else applies
+                                // REQ-S3R7, lowest in heirarchy
                                 dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Green);
 
                                 // REQ-S3R2, 1st in heirarchy
@@ -318,13 +318,13 @@ namespace WaterAnalysisTool.Loader
                                 else if (!flag)
                                 {
                                     foreach (SampleGroup g in this.CertifiedValueSamples)
-                                        if (g.Average[count - 1] < e.Average + 0.5 && g.Average[count - 1] > e.Average - 0.5) // TODO we should talk about similar
+                                        if (g.Average[count - 1] < e.Average + 0.5 && g.Average[count - 1] > e.Average - 0.5)
                                             if (g.Recovery[count - 1] > 110 || g.Recovery[count - 1] < 90)
                                                 dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.DodgerBlue);
                                 }
 
                                 // REQ-S3R5, 4th in heirarchy
-                                else if (this.CalibrationSamples.Average[count - 1] > (0.05 * e.Average))
+                                else if (this.CalibrationSamples.Average[count - 1] > 0.05 * e.Average)
                                 {
                                     dataws.Cells[row, col + 1].Style.Font.Color.SetColor(Color.Black);
                                     dataws.Cells[row, col + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
@@ -612,9 +612,9 @@ namespace WaterAnalysisTool.Loader
 
                                 s = calCurve.Series.Add(yrange, xrange);
                                 calCurve.Series[seriesIndex].Header = calibws.Cells[2, sampleElementCol].Value.ToString(); // names each series                              
-                                var trendline = s.TrendLines.Add(eTrendLine.Linear);
-                                trendline.DisplayEquation = false;
-                                trendline.DisplayRSquaredValue = false;
+                                ExcelChartTrendline tl = s.TrendLines.Add(eTrendLine.Linear);
+                                tl.DisplayRSquaredValue = false;
+                                tl.DisplayEquation = false;
                                 seriesIndex++;
                             }
                         }
