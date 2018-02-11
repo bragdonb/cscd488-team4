@@ -52,155 +52,6 @@ namespace WaterAnalysisTool
                     if (stringArgs.ToLower().Equals("usage"))
                         Console.WriteLine("\tparse <location/name of input> <location/name for output>\n\tanalyze <location/name of input> <r^2 threshold>\n\tType \"exit\" to exit.");
 
-                    #region Testing
-                    else if (stringArgs.ToLower().Equals("test loader"))
-                    {
-                        SampleGroup CalibrationSamples;
-                        SampleGroup CalibrationStandards;
-                        SampleGroup QualityControlSamples;
-                        SampleGroup CertifiedValueSamples_1;
-                        SampleGroup CertifiedValueSamples_2;
-                        SampleGroup Samples_1;
-                        SampleGroup Samples_2;
-
-                        Sample s = null;
-                        List<Sample> list = new List<Sample>();
-
-                        Random random = new Random();
-
-                        FileInfo fi = new FileInfo(@"tester.xlsx");
-                        if (fi.Exists)
-                            fi.Delete();
-
-                        using (var p = new ExcelPackage(new FileInfo(@"tester.xlsx")))
-                        {     
-                            p.Workbook.Properties.Title = "Title of Workbook";
-                            //p.Workbook.Worksheets.Add("Data");
-                            //p.Workbook.Worksheets.Add("Calibration Standards");
-
-
-                            DataLoader loader = new DataLoader(null, p);
-
-                            #region Sample & Sample Group Creation
-                            for(int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Calibration Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                                for(int j = 0; j < 10; j++)
-                                  s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-
-                                list.Add(s);
-                            }
-
-                            CalibrationSamples = new SampleGroup(list, "CalibrationSamples", false);
-                            list.Clear();
-
-                            for (int i = 0; i < 7; i++)
-                            {
-                                s = new Sample("Method Name", "Calibration Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                                //comment out this for-loop to test using data below
-                                for(int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-                                /******************** TESTING FOR DATA LOADER CALIBRATION CURVE ********************
-                                s.AddElement(new Element("Al3082", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("Cd2144", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("Cd2265", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("Fe2599", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("K_7664", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("As1890", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("Mn2576", "Units", random.NextDouble(), 1.0, 1.0));
-                                /*********************************** END TESTING ***********************************/
-
-                                list.Add(s);
-                            }
-
-                            CalibrationStandards = new SampleGroup(list, "CalibrationSamples", false);
-                            list.Clear();
-
-                            for (int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Quality Control Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                               for (int j = 0; j < 10; j++)
-                                   s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-
-                                list.Add(s);
-
-                            }
-
-                            QualityControlSamples = new SampleGroup(list, "QualityControlSamples", true);
-                            list.Clear();
-
-                            for(int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Certified Value (1) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                                for (int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-                                list.Add(s);
-                            }
-
-                            CertifiedValueSamples_1 = new SampleGroup(list, "CertifiedValueSamples_1", true);
-                            list.Clear();
-
-                            for(int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Certified Value (2) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                                for (int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-                                list.Add(s);
-                            }
-
-                            CertifiedValueSamples_2 = new SampleGroup(list, "CertifiedValueSamples_2", true);
-                            list.Clear();
-
-                            for(int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Generic (1) Sample #" + i, DateTime.Now.ToString(), "Unk", 3);
-
-                                for (int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-                                list.Add(s);
-                            }
-
-                            Samples_1 = new SampleGroup(list, "Samples_1", false);
-                            list.Clear();
-
-                            for(int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Generic (2) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                                for (int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-                                list.Add(s);
-                            }
-
-                            Samples_2 = new SampleGroup(list, "Samples_2", false);
-                            list.Clear();
-
-                            loader.AddCalibrationSampleGroup(CalibrationSamples);
-                            loader.AddCalibrationStandard(CalibrationStandards);
-                            loader.AddQualityControlSampleGroup(QualityControlSamples);
-                            loader.AddCertifiedValueSampleGroup(CertifiedValueSamples_1);
-                            loader.AddCertifiedValueSampleGroup(CertifiedValueSamples_2);
-                            loader.AddSampleGroup(Samples_1);
-                            loader.AddSampleGroup(Samples_2);
-                            #endregion
-
-                            loader.Load(); // Load calls Parse, don't need to in main; also saves the workbook
-                        }
-                    }
-                    #endregion
-
                     else
                     {
                         // Check if stringArgs matches expected command structure
@@ -211,9 +62,16 @@ namespace WaterAnalysisTool
                             #region Parse Command
                             if (arguments[0].Value.ToLower().Equals("parse"))
                             {
+                                // Input file cleaning
                                 String file = arguments[1].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
                                 if (!file.Contains(".")) // If it has no extension, add ".txt"
                                     file = file + ".txt";
+                                infile = new FileInfo(file);
+
+                                // Output file cleaning
+                                file = arguments[1].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
+                                if (!file.Contains(".")) // If it has no extension, add ".xlsx"
+                                    file = file + ".xlsx";
                                 infile = new FileInfo(file);
 
                                 if (infile.Exists)
@@ -374,7 +232,7 @@ namespace WaterAnalysisTool
                 // Ideally, we would never get here...
                 catch(Exception e)
                 {
-                    //Console.WriteLine("\t" + e.Message);
+                    //Console.WriteLine("\t" + e.Message); // Uncomment this when done and get rid of stuff below
                     Console.WriteLine("\t" + e.GetType() + " " + e.Message);
                     Console.WriteLine("\t" + e.ToString());
                 }

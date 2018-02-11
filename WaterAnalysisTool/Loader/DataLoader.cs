@@ -65,71 +65,75 @@ namespace WaterAnalysisTool.Loader
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
             // Write header info
-            Sample headerSample = Samples[Samples.Count - 1].Samples[Samples[Samples.Count - 1].Samples.Count - 1]; // good God
-            dataws.Cells["A1"].Value = headerSample.Method;
-            dataws.Cells["A2"].Value = headerSample.RunTime.Split(' ')[0];
-            dataws.Cells["A2"].Value = Output.Workbook.Properties.Title; // Assumes this was set to like the filename, change later to accept user input for title?
-
-            // Write element header rows
-            int col = 3; // Start at: row 5, column C
-            foreach (Element e in headerSample.Elements)
+            if (Samples.Count > 0)
             {
-                // Concentration headers
-                dataws.Cells[5, col].Value = e.Name;
-                dataws.Cells[5, col].Style.Font.Bold = true;
+                Sample headerSample = Samples[Samples.Count - 1].Samples[Samples[Samples.Count - 1].Samples.Count - 1]; // good God
+                dataws.Cells["A1"].Value = headerSample.Method;
+                dataws.Cells["A2"].Value = headerSample.RunTime.Split(' ')[0];
+                dataws.Cells["A2"].Value = Output.Workbook.Properties.Title; // Assumes this was set to like the filename, change later to accept user input for title?
 
-                dataws.Cells[6, col].Value = e.Units;
-                dataws.Cells[6, col].Style.Font.Bold = true;
-
-                // RSD headers
-                dataws.Cells[5, col + headerSample.Elements.Count + 2].Value = e.Name;
-                dataws.Cells[5, col + headerSample.Elements.Count + 2].Style.Font.Bold = true;
-
-                dataws.Cells[6, col + headerSample.Elements.Count + 2].Value = "RSD";
-                dataws.Cells[6, col + headerSample.Elements.Count + 2].Style.Font.Bold = true;
-
-                col++;
-            }
-
-            // Freeze top 6 rows and left 2 columns
-            dataws.View.FreezePanes(7, 3); // row, col: represents the first row/col that is not frozen
-
-            // Write samples
-            int row = 7; // Start at row 7, col 1
-
-            if(CalibrationSamples.Samples.Count > 1) // Don't want to write calibration samples with no data other than the known concentrations
-                row = WriteSamples(dataws, CalibrationSamples, nameof(CalibrationSamples), row);
-
-            if(QualityControlSamples.Samples.Count > 1) // Don't want to QC samples with no data other than the known concentrations
-                row = WriteSamples(dataws, QualityControlSamples, nameof(QualityControlSamples), row);
-
-            foreach (SampleGroup g in CertifiedValueSamples)
-            {
-                if (g.Samples.Count > 0)
-                    row = WriteSamples(dataws, g, nameof(CertifiedValueSamples), row);
-            }
-
-            dataws.Cells[row, 1].Value = "Samples";
-            dataws.Cells[row, 1].Style.Font.Bold = true;
-            row++;
-            foreach (SampleGroup g in Samples)
-            {
-                if (Samples.Count > 0)
+                // Write element header rows
+                int col = 3; // Start at: row 5, column C
+                foreach (Element e in headerSample.Elements)
                 {
-                    row = WriteSamples(dataws, g, nameof(Samples), row);
-                    row--;
+                    // Concentration headers
+                    dataws.Cells[5, col].Value = e.Name;
+                    dataws.Cells[5, col].Style.Font.Bold = true;
+
+                    dataws.Cells[6, col].Value = e.Units;
+                    dataws.Cells[6, col].Style.Font.Bold = true;
+
+                    // RSD headers
+                    dataws.Cells[5, col + headerSample.Elements.Count + 2].Value = e.Name;
+                    dataws.Cells[5, col + headerSample.Elements.Count + 2].Style.Font.Bold = true;
+
+                    dataws.Cells[6, col + headerSample.Elements.Count + 2].Value = "RSD";
+                    dataws.Cells[6, col + headerSample.Elements.Count + 2].Style.Font.Bold = true;
+
+                    col++;
                 }
+
+                // Freeze top 6 rows and left 2 columns
+                dataws.View.FreezePanes(7, 3); // row, col: represents the first row/col that is not frozen
+
+                // Write samples
+                int row = 7; // Start at row 7, col 1
+
+                if (CalibrationSamples.Samples.Count > 1) // Don't want to write calibration samples with no data other than the known concentrations
+                    row = WriteSamples(dataws, CalibrationSamples, nameof(CalibrationSamples), row);
+
+                if (QualityControlSamples.Samples.Count > 1) // Don't want to QC samples with no data other than the known concentrations
+                    row = WriteSamples(dataws, QualityControlSamples, nameof(QualityControlSamples), row);
+
+                foreach (SampleGroup g in CertifiedValueSamples)
+                {
+                    if (g.Samples.Count > 1)
+                        row = WriteSamples(dataws, g, nameof(CertifiedValueSamples), row);
+                }
+
+                dataws.Cells[row, 1].Value = "Samples";
+                dataws.Cells[row, 1].Style.Font.Bold = true;
+                row++;
+                foreach (SampleGroup g in Samples)
+                {
+                    if (Samples.Count > 0)
+                    {
+                        row = WriteSamples(dataws, g, nameof(Samples), row);
+                        row--;
+                    }
+                }
+
+                // Write calibration standards
+                var calibws = this.Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
+                WriteStandards(calibws, CalibrationStandards);
+
+                this.Output.Save();
+
+                this.Messages.Add("Formatted Excel sheet generated successfullly.");
             }
 
-            this.Messages.Add("Samples written to excel sheet successfully.");
-
-            // Write calibration standards
-            var calibws = this.Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
-            WriteStandards(calibws, CalibrationStandards);
-
-            this.Output.Save();
-
-            this.Messages.Add("Formatted Excel sheet generated successfullly.");
+            else
+                this.Messages.Add("Parser found zero generic samples. Could not genereate formmated Excel sheet.");
 
             foreach (String msg in this.Messages)
                 Console.WriteLine("\t" + msg);

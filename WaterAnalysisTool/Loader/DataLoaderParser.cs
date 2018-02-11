@@ -19,6 +19,8 @@ namespace WaterAnalysisTool.Loader
         private List<Sample> QualityControlSamples;
         private List<List<Sample>> CertifiedValueSamples; // When adding to this you will need to find the existing list with matching name, may not always exist
         private List<List<Sample>> Samples;
+
+        private const int LEVENSHTEIN_DISTANCE = 3; // Minimum distance needed for the parser to think that sample names are similar enough to group them together
         #endregion
 
         #region Constructors
@@ -200,9 +202,9 @@ namespace WaterAnalysisTool.Loader
 
                     if (avg.Contains("*") || stddev.Contains("-") || rsd.Contains("-")) // Some elements have no data
                     {
-                        avg = "0";
-                        stddev = "0";
-                        rsd = "0";
+                        avg = "NaN";
+                        stddev = "NaN";
+                        rsd = "NaN";
                     }
 
                     else
@@ -217,7 +219,30 @@ namespace WaterAnalysisTool.Loader
                         rsd.Trim();
                     }
 
-                     s.Elements.Add(new Element(elem, units, Convert.ToDouble(avg), Convert.ToDouble(stddev), Convert.ToDouble(rsd)));
+                    Double a;
+                    Double sd;
+                    Double r;
+
+                    if (avg.Equals("NaN"))
+                        a = Double.NaN;
+
+                    else
+                        a = Convert.ToDouble(avg);
+
+                    if (stddev.Equals("NaN"))
+                        sd = Double.NaN;
+
+                    else
+                        sd = Convert.ToDouble(stddev);
+
+                    if (rsd.Equals("NaN"))
+                        r = Double.NaN;
+
+                    else
+                        r = Convert.ToDouble(rsd);
+
+
+                     s.Elements.Add(new Element(elem, units, a, sd, r));
                 }
 
                 // Consume [Internal Standards]
@@ -277,6 +302,12 @@ namespace WaterAnalysisTool.Loader
             {
                 foreach (List<Sample> sg in this.CertifiedValueSamples) // Check if Sample is a certified value sample
                 {
+                    /*if(Utils.Utils.LevenshteinDistance(s.Name, sg[0].Name) <= LEVENSHTEIN_DISTANCE)
+                    {
+                        sg.Add((Sample)s.Clone());
+                        flag = true;
+                    }*/
+
                     if (s.Name.Contains(sg[0].Name))
                     {
                         sg.Add((Sample)s.Clone());
@@ -292,6 +323,12 @@ namespace WaterAnalysisTool.Loader
                     flag = false;
                     foreach (List<Sample> sg in this.Samples)
                     {
+                        /*if (Utils.Utils.LevenshteinDistance(s.Name, sg[0].Name) <= LEVENSHTEIN_DISTANCE)
+                        {
+                            sg.Add((Sample)s.Clone());
+                            flag = true;
+                        }*/
+
                         if (s.Name.Contains(sg[0].Name.Split(' ')[0]))
                         {
                             sg.Add((Sample)s.Clone());
