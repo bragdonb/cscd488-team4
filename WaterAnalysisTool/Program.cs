@@ -60,23 +60,22 @@ namespace WaterAnalysisTool
                             #region Parse Command
                             if (arguments[0].Value.ToLower().Equals("parse"))
                             {
-                                // Input file cleaning
-                                String file = arguments[1].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
-                                if (!file.Contains(".")) // If it has no extension, add ".txt"
-                                    file = file + ".txt";
-                                infile = new FileInfo(file);
+                                if (arguments.Count > 2)
+                                {
+                                    // Input file cleaning
+                                    String file = arguments[1].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
+                                    if (!file.Contains(".")) // If it has no extension, add ".txt"
+                                        file = file + ".txt";
+                                    infile = new FileInfo(file);
 
-                                // Output file cleaning
-                                file = arguments[1].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
-                                if (!file.Contains(".")) // If it has no extension, add ".xlsx"
-                                    file = file + ".xlsx";
-                                infile = new FileInfo(file);
+                                    // Output file cleaning
+                                    file = arguments[2].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
+                                    if (!file.Contains(".")) // If it has no extension, add ".xlsx"
+                                        file = file + ".xlsx";
+                                    outfile = new FileInfo(file);
 
-                                if (infile.Exists)
-                                { 
-                                    if (arguments.Count > 2)
+                                    if (infile.Exists)
                                     {
-                                        outfile = new FileInfo(@arguments[2].Value);
                                         if (outfile.Exists)
                                         {
                                             Console.WriteLine("\tA file of the name " + outfile.Name + " already exists at " + (outfile.ToString().Substring(0, outfile.Name.Length)) + ".");
@@ -112,10 +111,13 @@ namespace WaterAnalysisTool
                                             }
                                         }
                                     }
+
+                                    else
+                                        Console.WriteLine("\tCould not locate " + infile.ToString());
                                 }
 
                                 else
-                                    Console.WriteLine("\tCould not locate " + infile.ToString());
+                                    Console.WriteLine("\t" + stringArgs + " is an invalid command. For a list of valid commands enter \"usage\".");
                             }
                             #endregion
 
