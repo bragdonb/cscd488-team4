@@ -14,9 +14,7 @@ namespace WaterAnalysisTool
         public const double threshold = 0.7;
         public const double version = 1.0;
 
-        // TODO pretty sure if no file extension is added to the output file argument for the parse command things will break. Need to test once parser is done.
-        // TODO there is some duplicate code in the Parse and Analyze Command regions for checking if the user wants to continue with an overwrite operation. Look into reducing.
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             // The functionality of main:
             // 1. Awaits input in from user
