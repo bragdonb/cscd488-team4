@@ -13,7 +13,7 @@ namespace WaterAnalysisTool.Loader
     class DataLoader
     {
         #region Attributes
-        private SampleGroup CalibrationSamples;             // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
+        private SampleGroup CalibrationSamples;             // Quality Control Solutions (Instrument Blanks) -> Sample Type: QC
         private SampleGroup CalibrationStandards;           // Calibration Standard -> Sample Type: Cal
         private SampleGroup QualityControlSamples;          // Stated Values (CCV) -> Sample Type: QC
         private List<SampleGroup> CertifiedValueSamples;    // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC
@@ -97,10 +97,10 @@ namespace WaterAnalysisTool.Loader
             // Write samples
             int row = 7; // Start at row 7, col 1
 
-            if(CalibrationSamples.Samples.Count > 0)
+            if(CalibrationSamples.Samples.Count > 1) // Don't want to write calibration samples with no data other than the known concentrations
                 row = WriteSamples(dataws, CalibrationSamples, nameof(CalibrationSamples), row);
 
-            if(QualityControlSamples.Samples.Count > 0)
+            if(QualityControlSamples.Samples.Count > 1) // Don't want to QC samples with no data other than the known concentrations
                 row = WriteSamples(dataws, QualityControlSamples, nameof(QualityControlSamples), row);
 
             foreach (SampleGroup g in CertifiedValueSamples)
@@ -201,7 +201,7 @@ namespace WaterAnalysisTool.Loader
 
                     foreach(Element e in known.Elements)
                     {
-                        if (e.Average != -1) // assumes parser set average in elements with no data to -1
+                        if (e.Average != Double.NaN) // Assumes parser set average in elements with no data to Double.Nan
                         {
                             dataws.Cells[row, col].Value = e.Average;
                             dataws.Cells[row, col].Style.Font.Bold = true;
@@ -220,7 +220,7 @@ namespace WaterAnalysisTool.Loader
 
                     foreach (Element e in known.Elements)
                     {
-                        if (e.Average != -1) // assumes parse set average in elements with no data to -1
+                        if (e.Average != Double.NaN) // Assumes parse set average in elements with no data to Double.NaN
                         {
                             dataws.Cells[row, col].Value = e.Average;
                             dataws.Cells[row, col].Style.Font.Bold = true;
