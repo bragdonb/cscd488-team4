@@ -58,7 +58,7 @@ namespace WaterAnalysisTool.Utils
             {
                 for(int j = 0; j < m; j++)
                 {
-                    if(s[i] != j[i])
+                    if(s[i] != t[j])
                         d[i, j] = 0;
                     
                     else
