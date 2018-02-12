@@ -286,6 +286,7 @@ namespace WaterAnalysisTool.Loader
 
                     foreach (Element e in s.Elements)
                     {
+                        flag = false;
                         count++;
 
                         if (e.Average != Double.NaN) // Won't bother with cells where data does not exist (assumes parser set average in elements with no data to Double.Nan)
@@ -340,11 +341,14 @@ namespace WaterAnalysisTool.Loader
                                 else if (!flag)
                                 {
                                     Double highest = 0.0;
+                                    int i = 0;
 
                                     foreach (Sample std in this.CalibrationStandards.Samples)
                                     {
-                                        if (std.Elements[count - 1].Average > highest)
-                                            highest = std.Elements[count - 1].Average;
+                                        if (std.Elements[i].Average > highest)
+                                            highest = std.Elements[i].Average;
+
+                                        i++;
                                     }
 
                                     if (e.Average > highest)
@@ -435,26 +439,32 @@ namespace WaterAnalysisTool.Loader
                     dataws.Cells[row, 1].Value = "rsd (%)";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
+                    int i = 0;
                     for (col = 3; col <= count + 2; col++)
                     {
                         dataws.Cells[row, col].Formula = "STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")/" + dataws.Cells[rowEnd + 1, col].Address + "*100";
                         dataws.Cells[row, col].Style.Font.Bold = true;
 
-                        if (samples.RSD[count - 1] > 10)
+                        if (samples.RSD[i] > 10)
                             dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick);
+
+                        i++;
                     }
 
                     row++;
                     dataws.Cells[row, 1].Value = "recovery (%)";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
+                    i = 0;
                     for (col = 3; col <= count + 2; col++)
                     {
                         dataws.Cells[row, col].Formula = dataws.Cells[rowEnd + 1, col].Address + "/" + dataws.Cells[rowStart - 1, col].Address + "*100";
                         dataws.Cells[row, col].Style.Font.Bold = true;
 
-                        if (samples.Recovery[count - 1] < 90 || samples.Recovery[count - 1] > 110)
-                            dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick); 
+                        if (samples.Recovery[i] < 90 || samples.Recovery[i] > 110)
+                            dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick);
+
+                        i++;
                     }
 
                     break;

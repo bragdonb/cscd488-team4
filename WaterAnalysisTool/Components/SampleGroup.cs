@@ -92,6 +92,9 @@ namespace WaterAnalysisTool.Components
                 firstRow = false;
             }
 
+            if (skipFirst)
+                count--;
+
             for(index = 0; index < this.average.Count; index++)
                 this.average[index] = this.average[index] / count;
 
@@ -134,12 +137,15 @@ namespace WaterAnalysisTool.Components
                 firstRow = false;
             }
 
+            if (skipFirst)
+                count--;
+
             for (index = 0; index < this.average.Count; index++)
             {
                 double sum = this.lod[index];
-                this.lod[index] = 3 * Math.Sqrt(sum / count - 1);
-                this.loq[index] = 10 * Math.Sqrt(sum / count - 1);
-                this.rsd[index] = (Math.Sqrt(sum / count - 1)) / this.average[index] * 100;
+                this.lod[index] = 3 * Math.Sqrt(sum / (count - 1));
+                this.loq[index] = 10 * Math.Sqrt(sum / (count - 1));
+                this.rsd[index] = Math.Sqrt(sum / (count - 1)) / this.average[index] * 100;
             }
 
         }//end CalculateLODandLOQandRSD()

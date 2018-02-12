@@ -90,7 +90,7 @@ namespace WaterAnalysisTool
                                             {
                                                 outfile.Delete();
 
-                                                using (ExcelPackage p = new ExcelPackage(new FileInfo(@arguments[2].Value)))
+                                                using (ExcelPackage p = new ExcelPackage(outfile))
                                                 {
                                                     p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
 
@@ -102,7 +102,7 @@ namespace WaterAnalysisTool
 
                                         else
                                         {
-                                            using (ExcelPackage p = new ExcelPackage(new FileInfo(@arguments[2].Value)))
+                                            using (ExcelPackage p = new ExcelPackage(outfile))
                                             {
                                                 p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
 
