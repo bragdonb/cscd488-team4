@@ -235,7 +235,7 @@ namespace WaterAnalysisTool.Loader
                     break;
 
                 default:
-                    dataws.Cells[row, 1].Value = samples.Name;
+                    dataws.Cells[row, 1].Value = samples.Name.Split(' ')[0];
 
                     break;
             }
@@ -251,7 +251,7 @@ namespace WaterAnalysisTool.Loader
                 col = 1;
                 count = 0;
 
-                if (type == "QualityControlSamples" || type == "CertifiedValueSamples") // skip the first sample in these types because the first sample is known values and already written; seems like this could be cleaned up
+                if (type == "QualityControlSamples" || type == "CertifiedValueSamples") // Skip the first samples in these groups (known concentrations)
                 {
                     if(s != samples.Samples[0])
                     {
@@ -262,13 +262,15 @@ namespace WaterAnalysisTool.Loader
                         {
                             count++;
 
-                            if (e.Average != -1) // won't bother with cells where data does not exist (assumes parser set average in elements with no data to -1)
+                            if (e.Average != Double.NaN) // Won't bother with cells where data does not exist (assumes parser set average in elements with no data to Double.NaN)
                             {
                                 // Write Analyte concentrations
                                 dataws.Cells[row, col + 1].Value = e.Average;
+                                dataws.Cells[row, col + 1].Style.Numberformat.Format = "0.000";
 
                                 // Write RSD
                                 dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
+                                dataws.Cells[row, col + 1 + s.Elements.Count + 2].Style.Numberformat.Format = "0.000";
                             }
 
                             col++;
@@ -292,9 +294,11 @@ namespace WaterAnalysisTool.Loader
                         {
                             // Write Analyte concentrations
                             dataws.Cells[row, col + 1].Value = e.Average;
+                            dataws.Cells[row, col + 1].Style.Numberformat.Format = "0.000";
 
                             // Write RSD
                             dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
+                            dataws.Cells[row, col + 1 + s.Elements.Count + 2].Style.Numberformat.Format = "0.000";
 
                             // Do QA/QC formatting to analyte concentrations
                             #region QA/AC Formatting
@@ -377,6 +381,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "AVERAGE(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0.000";
                     }
 
                     row++;
@@ -387,6 +392,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "3*STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0.000";
                     }
 
                     row++;
@@ -397,6 +403,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "10*STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0.000";
                     }
 
                     break;
@@ -409,6 +416,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "AVERAGE(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0.000";
                     }
 
                     row++;
@@ -419,6 +427,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "(" + dataws.Cells[rowEnd + 1, col].Address + "-" + dataws.Cells[rowStart - 1, col].Address + ")/" + dataws.Cells[rowStart - 1, col].Address + "*100";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0";
                     }
 
                     break;
@@ -431,6 +440,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "AVERAGE(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0.000";
                     }
 
                     row++;
@@ -442,6 +452,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")/" + dataws.Cells[rowEnd + 1, col].Address + "*100";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0";
 
                         if (samples.RSD[i] > 10)
                             dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick);
@@ -458,6 +469,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = dataws.Cells[rowEnd + 1, col].Address + "/" + dataws.Cells[rowStart - 1, col].Address + "*100";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0";
 
                         if (samples.Recovery[i] < 90 || samples.Recovery[i] > 110)
                             dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick);
