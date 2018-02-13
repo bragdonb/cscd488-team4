@@ -6,7 +6,6 @@ using OfficeOpenXml;
 using OfficeOpenXml.Drawing.Chart;
 using WaterAnalysisTool.Components;
 using WaterAnalysisTool.Exceptions;
-using System.Text.RegularExpressions;
 
 namespace WaterAnalysisTool.Loader
 {
@@ -59,7 +58,7 @@ namespace WaterAnalysisTool.Loader
                 throw new ArgumentOutOfRangeException("Invalid number of worksheets present in workbook.\n");
             #endregion
 
-            DataLoaderParser parser = new DataLoaderParser(this, Input);
+            DataParser parser = new DataParser(this, Input);
             parser.Parse();
 
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
@@ -368,7 +367,6 @@ namespace WaterAnalysisTool.Loader
             rowEnd = row - 1;
 
             #region Write Unique Rows
-            // TODO determine if we want to write formulas for elements that weren't measure for (have no data, see examples where there are formula errors)
             switch (type)
             {
                 case "CalibrationSamples":
@@ -534,9 +532,8 @@ namespace WaterAnalysisTool.Loader
 
                 using (var p = new ExcelPackage(fi))
                 {
-                    // TODO this index [2] may change depending on if the CheckStandards.xlxs file changing
-                    ExcelWorksheet standardsws = p.Workbook.Worksheets[2];
-                
+                    ExcelWorksheet standardsws = p.Workbook.Worksheets[2]; // This index [2] may change depending on if the CheckStandards.xlxs file changing
+
                     // Find Calibration Standards section
                     row = 1;
                     int blankCount = 0;

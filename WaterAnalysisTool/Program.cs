@@ -11,30 +11,26 @@ namespace WaterAnalysisTool
 {
     class Program
     {
-        public const double threshold = 0.7;
-        public const double version = 1.0;
+        #region Constants
+        public const double CoD_THRESHOLD = 0.7;
+        public const double VERSION_NUMBER = 1.0;
+        public const String COMMAND_REGEX = "[^\\s\"']+|\"([^\"]*)\"|'([^']*)'";
+        #endregion
 
         public static void Main(string[] args)
         {
-            // The functionality of main:
-            // 1. Awaits input in from user
-            //  1.1. Accepts a command to parse the ICP-AES file (parse <location/name of input> <location/name for output>)
-            //      1.1.1. Create a new ExcelPackage
-            //      1.1.2. Set the title in the packages properties to the name of the output file (sans the extension)
-            //      1.1.3. Create a new DataLoader and call its load function
-            //  1.2. Accepts a command to create correlation matrices (analyze <location/name of input> <r^2 threshold>)
-
             FileInfo infile = null, outfile = null; ;
             Double r2val;
             bool flag;
 
             String stringArgs = null;
-            Regex r = new Regex("[^\\s\"']+|\"([^\"]*)\"|'([^']*)'");
+            Regex r = new Regex(COMMAND_REGEX);
             MatchCollection arguments = null;
 
             // Startup Message
-            Console.WriteLine("ICP-AES Text File Parser version " + version + ".\nType \"usage\" for a list of commands.\n");
+            Console.WriteLine("ICP-AES Text File Parser version " + VERSION_NUMBER + ".\nType \"usage\" for a list of commands.\n");
 
+            #region Command Loop
             do
             {
                 try
@@ -165,7 +161,7 @@ namespace WaterAnalysisTool
 
                                                     if (!flag)
                                                     {
-                                                        AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
+                                                        AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, CoD_THRESHOLD);
                                                         analyticsLoader.Load();
                                                     }
                                                 }
@@ -208,7 +204,7 @@ namespace WaterAnalysisTool
 
                                             if (!flag)
                                             {
-                                                AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
+                                                AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, CoD_THRESHOLD);
                                                 analyticsLoader.Load();
                                             }
                                         }
@@ -229,16 +225,15 @@ namespace WaterAnalysisTool
                     }
                 }
 
-                // Ideally, we would never get here...
+                // Exception catching
                 catch(Exception e)
                 {
-                    //Console.WriteLine("\t" + e.Message); // Uncomment this when done and get rid of stuff below
-                    Console.WriteLine("\t" + e.GetType() + " " + e.Message);
-                    Console.WriteLine("\t" + e.ToString());
+                    Console.WriteLine("\t" + e.Message);
                 }
 
                 Console.WriteLine(); // Some formatting
             } while (!stringArgs.ToLower().Equals("exit"));
+            #endregion
 
             Console.WriteLine("Exiting...");
         }

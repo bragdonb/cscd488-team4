@@ -8,7 +8,7 @@ using WaterAnalysisTool.Exceptions;
 
 namespace WaterAnalysisTool.Loader
 {
-    class DataLoaderParser
+    class DataParser
     {
         #region Attributes
         private DataLoader Loader;
@@ -24,7 +24,7 @@ namespace WaterAnalysisTool.Loader
         #endregion
 
         #region Constructors
-        public DataLoaderParser (DataLoader loader, StreamReader inf)
+        public DataParser (DataLoader loader, StreamReader inf)
         {
             this.Loader = loader;
             this.Input = inf;

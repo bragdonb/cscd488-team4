@@ -113,14 +113,18 @@ namespace WaterAnalysisTool.Analyzer
 
                         if (CoD >= this.Threshold)
                         {
+                            // Highlight CoD meeting or exceeding threshold
                             if (e1[0].Name != e2[0].Name)
                                 correlationws.Cells[row, count + 1].Style.Font.Color.SetColor(Color.Green);
 
+                            // But not if its an analyte pair that is just the same element (will always be 1)
                             else
                             {
                                 correlationws.Cells[row, count + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
                                 correlationws.Cells[row, count + 1].Style.Fill.BackgroundColor.SetColor(Color.Gray);
                             }
+
+                            // TODO Generate scatter plot of analyte pair
                         }
 
                         count++;

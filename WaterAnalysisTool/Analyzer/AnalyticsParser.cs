@@ -31,7 +31,6 @@ namespace WaterAnalysisTool.Analyzer
         #endregion
 
         #region Public Methods
-        //TODO parse sample group names as well and pass them to the loader using loader.AddSampleName(sgName)
         public void Parse()
         {
             if (this.dataWorkbook.File.Length < 4 || !this.dataWorkbook.File.Exists)
@@ -67,45 +66,32 @@ namespace WaterAnalysisTool.Analyzer
                 Console.WriteLine("No samples found in file.");
                 return;
             }
-            
+
             /* We have reached the Samples.
                Next line should be the name of SampleGroup, 
                the line after that should be the 
                first sample name within the first SampleGroup.
             */
-            this.row += 2;
+            this.row++;
 
             while (!isEndOfWorksheet())
             {
-                // elements.Add(fillElementList()); // needs to add the sample group's list of element lists to the loader
+                this.loader.AddSampleName(this.dataws.Cells[this.row, 1].Value.ToString());
+                this.row++;
                 fillElementList();
                 this.loader.AddElements(this.elements);
-                /*TESTING*/
-                this.loader.AddSampleName("Test Sample Name");
                 this.elements.Clear();
-                this.row += 2;
+                this.row++;
             }
-            /*foreach (List<Element> le in elements)
-            {
-                foreach(Element e in le)
-                {
-                    Console.WriteLine(e.Name + " " + e.Average);
-                }
-            }*/
-            // this.loader.AddElements(elements);
-
         }
         #endregion
 
         #region Private Methods
-        private List<Element> fillElementList()
+        private void fillElementList()
         {
             this.resetRow = this.row;
-            int colLength = 0; // TODO I am pretty sure this needs to start at one? Last iteration of first run skips increment for last data point (originally was zero, is probably fine, don't wanna think about it.)
+            int colLength = 0;
             bool firstRun = true;
-
-            // move inside for loop, new list for each element
-            //List<Element> analytes = new List<Element>();
 
             for (int x = 0; this.dataws.Cells[this.row, this.col].Value != null; x++)
             {
@@ -113,7 +99,6 @@ namespace WaterAnalysisTool.Analyzer
 
                 for (int y = 0; this.dataws.Cells[this.row, this.col].Value != null; y++)
                 {
-                    /*TODO Testing Console.WriteLine("Trying to parse: " + this.dataws.Cells[this.row, this.col].Value.ToString() + "   " + "\tfor element: " + this.elementNames[x] + "\tx = " + x + "\ty = " + y);*/
                     analytes.Add(new Element(this.elementNames[x], "", Double.Parse(this.dataws.Cells[this.row, this.col].Value.ToString()), this.row, this.col));
                     this.row++;
                     if (firstRun)
@@ -123,22 +108,17 @@ namespace WaterAnalysisTool.Analyzer
                 this.row = this.resetRow;
                 this.col++;
 
-                // need to add to the list that represents the sample list then clear the list for re-use, otherwise elements just get added to the same list
+                // Add to the list that represents the sample list
                 this.elements.Add(analytes);
-                //analytes.Clear(); // I lied don't clear
             }
 
-            this.row += colLength;//at blank space after first samplegroup
+            this.row += colLength; // At blank space after first samplegroup
             this.col = 3;
-
-            // doesn't really need to return now
-            //return analytes;
-            return null;
         }
 
         private bool isEndOfWorksheet()
         {
-            if (this.dataws.Cells[this.row, this.col].Value != null)
+            if (this.dataws.Cells[this.row, 1].Value != null)
                 return false;
 
             return true;
