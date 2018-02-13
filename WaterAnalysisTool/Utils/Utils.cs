@@ -40,6 +40,43 @@ namespace WaterAnalysisTool.Utils
 
             return d[n, m];
         }
+        
+        public static int LongestCommonSubstring(String s, String t)
+        {
+            if(s.Equals("") || s == null)
+                return 0;
+            
+            if(t.Equals("") || s == null)
+                return 0;
+            
+            int n = s.Length;
+            int m = t.Length;
+            int maxlen = 0;
+            int[,] d = new int[n, m];
+            
+            for(int i = 0; i < n; i++)
+            {
+                for(int j = 0; j < m; j++)
+                {
+                    if(s[i] != t[j])
+                        d[i, j] = 0;
+                    
+                    else
+                    {
+                        if(i == 0 || j == 0)
+                            d[i, j] = 1;
+                        
+                        else
+                            d[i, j] = d[i - 1, j - 1] + 1;
+                        
+                        if(d[i, j] > maxlen)
+                            maxlen = d[i, j];
+                    }
+                }
+            }
+            
+            return maxlen;
+        }
         #endregion
     }
 }
