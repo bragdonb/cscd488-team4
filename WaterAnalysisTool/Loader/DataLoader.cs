@@ -605,18 +605,22 @@ namespace WaterAnalysisTool.Loader
                     }
 
                     // Create the chart
+                    // /*
                     ExcelChart calCurve = calibws.Drawings.AddChart("Calibration Curve", eChartType.XYScatter);
                     calCurve.Title.Text = "Calibration Curve";
                     calCurve.SetPosition(endRow + 2, 0, 1, 0);
                     calCurve.SetSize(600, 400);
                     calCurve.YAxis.MinValue = 0;
                     calCurve.XAxis.MinValue = 0;
+                    // */
                     
                     ExcelRange yrange = null, xrange = null;
                     ExcelChartSerie s = null;
 
                     bool found = false;
                     int seriesIndex = 0; // for naming the series
+
+                    int graphCol = 1;
 
                     // Search through Standard element names to match up with Sample element names, and graph them
                     for (int sampleElementCol = 3; calibws.Cells[2, sampleElementCol].Value != null; sampleElementCol++)
@@ -633,22 +637,33 @@ namespace WaterAnalysisTool.Loader
                                 yrange = calibws.Cells[4, sampleElementCol, 3 + numSamples, sampleElementCol];
                                 xrange = calibws.Cells[startRow, standardElementCol, numStandards + startRow - 1, standardElementCol];
 
-                                s = calCurve.Series.Add(yrange, xrange);
-                                calCurve.Series[seriesIndex].Header = calibws.Cells[2, sampleElementCol].Value.ToString(); // names each series                              
+                                //added code DOESNT WORK 
+                                /*
+                                ExcelChart newGraph = calibws.Drawings.AddChart(calibws.Cells[2, sampleElementCol].Value.ToString(), eChartType.XYScatter);
+                                newGraph.Title.Text = calibws.Cells[2, sampleElementCol].Value.ToString();
+                                newGraph.SetPosition(endRow + 2, 0, graphCol, 0);
+                                newGraph.SetSize(300, 250);
+                                newGraph.YAxis.MinValue = 0;
+                                newGraph.XAxis.MinValue = 0;*/
+
+                                s = /*newGraph*/calCurve.Series.Add(yrange, xrange);
+                                /*newGraph*/calCurve.Series[seriesIndex].Header = calibws.Cells[2, sampleElementCol].Value.ToString(); // names each series                              
                                 ExcelChartTrendline tl = s.TrendLines.Add(eTrendLine.Linear);
                                 tl.DisplayRSquaredValue = false;
                                 tl.DisplayEquation = false;
                                 seriesIndex++;
+
+                                graphCol += 5;
                             }
                         }
                     }
 
 
-                    yrange = calibws.Cells[endRow - 1, 2, endRow - 1, col];
-                    xrange = calibws.Cells[endRow, 2, endRow, col];
+                    //yrange = calibws.Cells[endRow - 1, 2, endRow - 1, col];
+                    //xrange = calibws.Cells[endRow, 2, endRow, col];
 
-                    var series1 = calCurve.Series.Add(yrange, xrange);
-                    series1.TrendLines.Add(eTrendLine.Linear);               
+                    //var series1 = calCurve.Series.Add(yrange, xrange);
+                    //series1.TrendLines.Add(eTrendLine.Linear);               
                     
                 }
 
