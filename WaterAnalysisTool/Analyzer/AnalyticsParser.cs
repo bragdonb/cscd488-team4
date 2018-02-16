@@ -19,7 +19,7 @@ namespace WaterAnalysisTool.Analyzer
         private List<String> elementNames;
         #endregion
 
-        #region Constructor(s)
+        #region Constructor
         public AnalyticsParser(ExcelPackage datawb, AnalyticsLoader loader)
         {
             this.dataWorkbook = datawb;
@@ -101,9 +101,11 @@ namespace WaterAnalysisTool.Analyzer
                 {
                     analytes.Add(new Element(this.elementNames[x], "", Double.Parse(this.dataws.Cells[this.row, this.col].Value.ToString()), this.row, this.col));
                     this.row++;
+
                     if (firstRun)
                         colLength++;
                 }
+
                 firstRun = false;
                 this.row = this.resetRow;
                 this.col++;

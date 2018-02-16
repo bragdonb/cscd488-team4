@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using WaterAnalysisTool.Components;
 using OfficeOpenXml;
 using WaterAnalysisTool.Exceptions;
+using OfficeOpenXml.Drawing.Chart;
 
 namespace WaterAnalysisTool.Analyzer
 {
     class AnalyticsLoader
     {
         #region Attributes
-        private List<List<List<Element>>> Elements; // each list of elements represents data for one element
+        private List<List<List<Element>>> Elements; // Each list of elements represents all the data for one element
         private List<String> SampleNames;
         private List<String> Messages;
         private ExcelPackage DataWorkbook;
@@ -46,8 +47,8 @@ namespace WaterAnalysisTool.Analyzer
             if (Elements.Count < 1)
                 throw new ParseErrorException("Problem parsing input Excel workbook. No Sample groups found.");
 
-            this.DataWorkbook.Workbook.Worksheets.Add("Correlation");
-            var correlationws = this.DataWorkbook.Workbook.Worksheets[this.DataWorkbook.Workbook.Worksheets.Count]; // Should be the last workbook
+            var dataws = this.DataWorkbook.Workbook.Worksheets[1];
+            var correlationws = this.DataWorkbook.Workbook.Worksheets.Add("Correlation");
 
             // Write outline for correlation matrices
             for(int i = 0; i < Elements.Count; i++)
@@ -110,6 +111,7 @@ namespace WaterAnalysisTool.Analyzer
                         CoD = CalculateCoeffiecientOfDetermination(e1, e2);
 
                         correlationws.Cells[row, count + 1].Value = CoD;
+                        correlationws.Cells[row, count + 1].Style.Numberformat.Format = "0.00";
 
                         if (CoD >= this.Threshold)
                         {
@@ -125,6 +127,17 @@ namespace WaterAnalysisTool.Analyzer
                             }
 
                             // TODO Generate scatter plot of analyte pair
+                            int cNum = 0;
+                            ExcelRange xrange = dataws.Cells[(int) e1[0].StandardDeviation, (int) e1[0].RSD, (int) e1[e1.Count - 1].StandardDeviation, (int) e1[e1.Count - 1].RSD]; // because the parser used Std. Dev. and RSD in element to store row and column
+                            ExcelRange yrange = dataws.Cells[(int) e2[0].StandardDeviation, (int) e2[0].RSD, (int) e2[e2.Count - 1].StandardDeviation, (int) e2[e2.Count - 1].RSD];
+
+                            ExcelChart scatter = correlationws.Drawings.AddChart(e1[0].Name + " vs. " + e2[0].Name + " " + cNum, eChartType.XYScatter);
+                            scatter.Title.Text = e1[0].Name + " vs. " + e2[0].Name;
+                            // scatter.SetPosition(1, 0, 1, 0);
+                            scatter.SetSize(600, 400);
+
+                            ExcelChartSerie serie = scatter.Series.Add(xrange, yrange);
+                            cNum++;
                         }
 
                         count++;
@@ -144,6 +157,7 @@ namespace WaterAnalysisTool.Analyzer
                 Console.WriteLine("\t" + msg);
         }
 
+        #region Add<Something>
         public void AddElements(List<List<Element>> elements)
         {
             if (elements == null)
@@ -173,6 +187,7 @@ namespace WaterAnalysisTool.Analyzer
 
             this.SampleNames.Add(sgName);
         }
+        #endregion
         #endregion
 
         #region Private Methods

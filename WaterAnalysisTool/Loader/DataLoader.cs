@@ -634,7 +634,7 @@ namespace WaterAnalysisTool.Loader
                                 xrange = calibws.Cells[startRow, standardElementCol, numStandards + startRow - 1, standardElementCol];
 
                                 s = calCurve.Series.Add(yrange, xrange);
-                                calCurve.Series[seriesIndex].Header = calibws.Cells[2, sampleElementCol].Value.ToString(); // names each series                              
+                                calCurve.Series[seriesIndex].Header = calibws.Cells[2, sampleElementCol].Value.ToString(); // Names each series                              
                                 ExcelChartTrendline tl = s.TrendLines.Add(eTrendLine.Linear);
                                 tl.DisplayRSquaredValue = false;
                                 tl.DisplayEquation = false;

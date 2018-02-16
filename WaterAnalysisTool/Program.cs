@@ -228,7 +228,8 @@ namespace WaterAnalysisTool
                 // Exception catching
                 catch(Exception e)
                 {
-                    Console.WriteLine("\t" + e.Message);
+                    // Console.WriteLine("\t" + e.Message);
+                    Console.WriteLine("\t" + e.ToString());
                 }
 
                 Console.WriteLine(); // Some formatting
