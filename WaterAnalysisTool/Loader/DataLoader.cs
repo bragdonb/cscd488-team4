@@ -58,7 +58,7 @@ namespace WaterAnalysisTool.Loader
                 throw new ArgumentOutOfRangeException("Invalid number of worksheets present in workbook.\n");
             #endregion
 
-            DataParser parser = new DataParser(this, Input);
+            DataLoaderParser parser = new DataLoaderParser(this, Input);
             parser.Parse();
 
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
