@@ -161,7 +161,7 @@ namespace WaterAnalysisTool
 
                                                     if (!flag)
                                                     {
-                                                        AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, CoD_THRESHOLD);
+                                                        AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, r2val);
                                                         analyticsLoader.Load();
                                                     }
                                                 }

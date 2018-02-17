@@ -38,6 +38,7 @@ namespace WaterAnalysisTool.Analyzer
             int col = 1;
             int columnCount = 0;
             int matrixIndex = 0;
+            int chartNumber = 0;
             Double CoD; // Coefficient of Determination or r squared
             List<Element> e2 = null;
 
@@ -50,6 +51,7 @@ namespace WaterAnalysisTool.Analyzer
             var dataws = this.DataWorkbook.Workbook.Worksheets[1];
             var correlationws = this.DataWorkbook.Workbook.Worksheets.Add("Correlation");
 
+            #region Matrix Outline
             // Write outline for correlation matrices
             for(int i = 0; i < Elements.Count; i++)
             {
@@ -65,7 +67,7 @@ namespace WaterAnalysisTool.Analyzer
                 while(count < Elements[i].Count)
                 {
                     col++;
-                    correlationws.Cells[row, col].Value = Elements[i][count][i].Name;
+                    correlationws.Cells[row, col].Value = Elements[i][count][Elements[i][count].Count - 1].Name;
                     correlationws.Cells[row, col].Style.Font.Bold = true;
                     count++;
                     columnCount++;
@@ -78,7 +80,7 @@ namespace WaterAnalysisTool.Analyzer
                 while(count < Elements[i].Count)
                 {
                     row++;
-                    correlationws.Cells[row, col].Value = Elements[i][count][i].Name;
+                    correlationws.Cells[row, col].Value = Elements[i][count][Elements[i][count].Count - 1].Name;
                     correlationws.Cells[row, col].Style.Font.Bold = true;
 
                     if (row % 2 != 0)
@@ -92,6 +94,7 @@ namespace WaterAnalysisTool.Analyzer
 
                 row += 2;
             }
+            #endregion
 
             // Calculate Coefficient of Determination for each element pair for each sample group
             foreach (List<List<Element>> sg in Elements)
@@ -117,7 +120,24 @@ namespace WaterAnalysisTool.Analyzer
                         {
                             // Highlight CoD meeting or exceeding threshold
                             if (e1[0].Name != e2[0].Name)
+                            {
                                 correlationws.Cells[row, count + 1].Style.Font.Color.SetColor(Color.Green);
+
+                                // TODO Generate scatter plot of analyte pair
+                                ExcelRange xrange = dataws.Cells[(int)e1[0].StandardDeviation, (int)e1[0].RSD, (int)e1[e1.Count - 1].StandardDeviation, (int)e1[e1.Count - 1].RSD]; // because the parser used Std. Dev. and RSD in element to store row and column
+                                ExcelRange yrange = dataws.Cells[(int)e2[0].StandardDeviation, (int)e2[0].RSD, (int)e2[e2.Count - 1].StandardDeviation, (int)e2[e2.Count - 1].RSD];
+
+                                ExcelChart scatter = correlationws.Drawings.AddChart(chartNumber + " " + e1[0].Name + " vs. " + e2[0].Name, eChartType.XYScatter);
+                                scatter.Title.Text = e1[0].Name + " vs. " + e2[0].Name;
+                                scatter.SetPosition(chartNumber + 1, 0, columnCount + 2, 0);
+                                scatter.SetSize(600, 400);
+                                scatter.Legend.Remove();
+
+                                ExcelChartSerie serie = scatter.Series.Add(xrange, yrange);
+                                serie.TrendLines.Add(eTrendLine.Linear);
+
+                                chartNumber++;
+                            }
 
                             // But not if its an analyte pair that is just the same element (will always be 1)
                             else
@@ -125,19 +145,6 @@ namespace WaterAnalysisTool.Analyzer
                                 correlationws.Cells[row, count + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
                                 correlationws.Cells[row, count + 1].Style.Fill.BackgroundColor.SetColor(Color.Gray);
                             }
-
-                            // TODO Generate scatter plot of analyte pair
-                            int cNum = 0;
-                            ExcelRange xrange = dataws.Cells[(int) e1[0].StandardDeviation, (int) e1[0].RSD, (int) e1[e1.Count - 1].StandardDeviation, (int) e1[e1.Count - 1].RSD]; // because the parser used Std. Dev. and RSD in element to store row and column
-                            ExcelRange yrange = dataws.Cells[(int) e2[0].StandardDeviation, (int) e2[0].RSD, (int) e2[e2.Count - 1].StandardDeviation, (int) e2[e2.Count - 1].RSD];
-
-                            ExcelChart scatter = correlationws.Drawings.AddChart(e1[0].Name + " vs. " + e2[0].Name + " " + cNum, eChartType.XYScatter);
-                            scatter.Title.Text = e1[0].Name + " vs. " + e2[0].Name;
-                            // scatter.SetPosition(1, 0, 1, 0);
-                            scatter.SetSize(600, 400);
-
-                            ExcelChartSerie serie = scatter.Series.Add(xrange, yrange);
-                            cNum++;
                         }
 
                         count++;
@@ -197,7 +204,7 @@ namespace WaterAnalysisTool.Analyzer
             Double stdev1 = CalculateElementStandardDeviation(e1);
             Double stdev2 = CalculateElementStandardDeviation(e2);
 
-            if (stdev1 == 0)
+            if (stdev1 == 0 || stdev1 == Double.NaN)
             {
                 msg = "Warning: Standard deviation for " + e1[0].Name + " is zero. Some r^2 values may be missing.";
 
@@ -205,7 +212,7 @@ namespace WaterAnalysisTool.Analyzer
                     this.Messages.Add(msg);
             }
 
-            if (stdev2 == 0)
+            if (stdev2 == 0 || stdev2 == Double.NaN)
             {
                 msg = "Warning: Standard deviation for " + e2[0].Name + " is zero. Some r^2 values may be missing.";
 
