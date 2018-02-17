@@ -6,14 +6,13 @@ using OfficeOpenXml;
 using OfficeOpenXml.Drawing.Chart;
 using WaterAnalysisTool.Components;
 using WaterAnalysisTool.Exceptions;
-using System.Text.RegularExpressions;
 
 namespace WaterAnalysisTool.Loader
 {
     class DataLoader
     {
         #region Attributes
-        private SampleGroup CalibrationSamples;             // Quality Control Solutions (Insturment Blanks) -> Sample Type: QC
+        private SampleGroup CalibrationSamples;             // Quality Control Solutions (Instrument Blanks) -> Sample Type: QC
         private SampleGroup CalibrationStandards;           // Calibration Standard -> Sample Type: Cal
         private SampleGroup QualityControlSamples;          // Stated Values (CCV) -> Sample Type: QC
         private List<SampleGroup> CertifiedValueSamples;    // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC
@@ -65,71 +64,75 @@ namespace WaterAnalysisTool.Loader
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
 
             // Write header info
-            Sample headerSample = Samples[Samples.Count - 1].Samples[Samples[Samples.Count - 1].Samples.Count - 1]; // good God
-            dataws.Cells["A1"].Value = headerSample.Method;
-            dataws.Cells["A2"].Value = headerSample.RunTime.Split(' ')[0];
-            dataws.Cells["A2"].Value = Output.Workbook.Properties.Title; // Assumes this was set to like the filename, change later to accept user input for title?
-
-            // Write element header rows
-            int col = 3; // Start at: row 5, column C
-            foreach (Element e in headerSample.Elements)
+            if (Samples.Count > 0)
             {
-                // Concentration headers
-                dataws.Cells[5, col].Value = e.Name;
-                dataws.Cells[5, col].Style.Font.Bold = true;
+                Sample headerSample = Samples[Samples.Count - 1].Samples[Samples[Samples.Count - 1].Samples.Count - 1]; // good God
+                dataws.Cells["A1"].Value = headerSample.Method;
+                dataws.Cells["A2"].Value = headerSample.RunTime.Split(' ')[0];
+                dataws.Cells["A2"].Value = Output.Workbook.Properties.Title; // Assumes this was set to like the filename, change later to accept user input for title?
 
-                dataws.Cells[6, col].Value = e.Units;
-                dataws.Cells[6, col].Style.Font.Bold = true;
-
-                // RSD headers
-                dataws.Cells[5, col + headerSample.Elements.Count + 2].Value = e.Name;
-                dataws.Cells[5, col + headerSample.Elements.Count + 2].Style.Font.Bold = true;
-
-                dataws.Cells[6, col + headerSample.Elements.Count + 2].Value = "RSD";
-                dataws.Cells[6, col + headerSample.Elements.Count + 2].Style.Font.Bold = true;
-
-                col++;
-            }
-
-            // Freeze top 6 rows and left 2 columns
-            dataws.View.FreezePanes(7, 3); // row, col: represents the first row/col that is not frozen
-
-            // Write samples
-            int row = 7; // Start at row 7, col 1
-
-            if(CalibrationSamples.Samples.Count > 0)
-                row = WriteSamples(dataws, CalibrationSamples, nameof(CalibrationSamples), row);
-
-            if(QualityControlSamples.Samples.Count > 0)
-                row = WriteSamples(dataws, QualityControlSamples, nameof(QualityControlSamples), row);
-
-            foreach (SampleGroup g in CertifiedValueSamples)
-            {
-                if (g.Samples.Count > 0)
-                    row = WriteSamples(dataws, g, nameof(CertifiedValueSamples), row);
-            }
-
-            dataws.Cells[row, 1].Value = "Samples";
-            dataws.Cells[row, 1].Style.Font.Bold = true;
-            row++;
-            foreach (SampleGroup g in Samples)
-            {
-                if (Samples.Count > 0)
+                // Write element header rows
+                int col = 3; // Start at: row 5, column C
+                foreach (Element e in headerSample.Elements)
                 {
-                    row = WriteSamples(dataws, g, nameof(Samples), row);
-                    row--;
+                    // Concentration headers
+                    dataws.Cells[5, col].Value = e.Name;
+                    dataws.Cells[5, col].Style.Font.Bold = true;
+
+                    dataws.Cells[6, col].Value = e.Units;
+                    dataws.Cells[6, col].Style.Font.Bold = true;
+
+                    // RSD headers
+                    dataws.Cells[5, col + headerSample.Elements.Count + 2].Value = e.Name;
+                    dataws.Cells[5, col + headerSample.Elements.Count + 2].Style.Font.Bold = true;
+
+                    dataws.Cells[6, col + headerSample.Elements.Count + 2].Value = "RSD";
+                    dataws.Cells[6, col + headerSample.Elements.Count + 2].Style.Font.Bold = true;
+
+                    col++;
                 }
+
+                // Freeze top 6 rows and left 2 columns
+                dataws.View.FreezePanes(7, 3); // row, col: represents the first row/col that is not frozen
+
+                // Write samples
+                int row = 7; // Start at row 7, col 1
+
+                if (CalibrationSamples.Samples.Count > 1) // Don't want to write calibration samples with no data other than the known concentrations
+                    row = WriteSamples(dataws, CalibrationSamples, nameof(CalibrationSamples), row);
+
+                if (QualityControlSamples.Samples.Count > 1) // Don't want to QC samples with no data other than the known concentrations
+                    row = WriteSamples(dataws, QualityControlSamples, nameof(QualityControlSamples), row);
+
+                foreach (SampleGroup g in CertifiedValueSamples)
+                {
+                    if (g.Samples.Count > 1)
+                        row = WriteSamples(dataws, g, nameof(CertifiedValueSamples), row);
+                }
+
+                dataws.Cells[row, 1].Value = "Samples";
+                dataws.Cells[row, 1].Style.Font.Bold = true;
+                row++;
+                foreach (SampleGroup g in Samples)
+                {
+                    if (Samples.Count > 0)
+                    {
+                        row = WriteSamples(dataws, g, nameof(Samples), row);
+                        row--;
+                    }
+                }
+
+                // Write calibration standards
+                var calibws = this.Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
+                WriteStandards(calibws, CalibrationStandards);
+
+                this.Output.Save();
+
+                this.Messages.Add("Formatted Excel sheet generated successfullly.");
             }
 
-            this.Messages.Add("Samples written to excel sheet successfully.");
-
-            // Write calibration standards
-            var calibws = this.Output.Workbook.Worksheets[2]; // The calibration worksheet is the second worksheet
-            WriteStandards(calibws, CalibrationStandards);
-
-            this.Output.Save();
-
-            this.Messages.Add("Formatted Excel sheet generated successfullly.");
+            else
+                this.Messages.Add("Parser found zero generic samples. Could not genereate formmated Excel sheet.");
 
             foreach (String msg in this.Messages)
                 Console.WriteLine("\t" + msg);
@@ -201,7 +204,7 @@ namespace WaterAnalysisTool.Loader
 
                     foreach(Element e in known.Elements)
                     {
-                        if (e.Average != -1) // assumes parser set average in elements with no data to -1
+                        if (e.Average != Double.NaN) // Assumes parser set average in elements with no data to Double.Nan
                         {
                             dataws.Cells[row, col].Value = e.Average;
                             dataws.Cells[row, col].Style.Font.Bold = true;
@@ -220,7 +223,7 @@ namespace WaterAnalysisTool.Loader
 
                     foreach (Element e in known.Elements)
                     {
-                        if (e.Average != -1) // assumes parse set average in elements with no data to -1
+                        if (e.Average != Double.NaN) // Assumes parse set average in elements with no data to Double.NaN
                         {
                             dataws.Cells[row, col].Value = e.Average;
                             dataws.Cells[row, col].Style.Font.Bold = true;
@@ -232,7 +235,7 @@ namespace WaterAnalysisTool.Loader
                     break;
 
                 default:
-                    dataws.Cells[row, 1].Value = samples.Name;
+                    dataws.Cells[row, 1].Value = samples.Name.Split(' ')[0];
 
                     break;
             }
@@ -248,7 +251,7 @@ namespace WaterAnalysisTool.Loader
                 col = 1;
                 count = 0;
 
-                if (type == "QualityControlSamples" || type == "CertifiedValueSamples") // skip the first sample in these types because the first sample is known values and already written; seems like this could be cleaned up
+                if (type == "QualityControlSamples" || type == "CertifiedValueSamples") // Skip the first samples in these groups (known concentrations)
                 {
                     if(s != samples.Samples[0])
                     {
@@ -259,13 +262,15 @@ namespace WaterAnalysisTool.Loader
                         {
                             count++;
 
-                            if (e.Average != -1) // won't bother with cells where data does not exist (assumes parser set average in elements with no data to -1)
+                            if (e.Average != Double.NaN) // Won't bother with cells where data does not exist (assumes parser set average in elements with no data to Double.NaN)
                             {
                                 // Write Analyte concentrations
                                 dataws.Cells[row, col + 1].Value = e.Average;
+                                dataws.Cells[row, col + 1].Style.Numberformat.Format = "0.000";
 
                                 // Write RSD
                                 dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
+                                dataws.Cells[row, col + 1 + s.Elements.Count + 2].Style.Numberformat.Format = "0.000";
                             }
 
                             col++;
@@ -282,15 +287,18 @@ namespace WaterAnalysisTool.Loader
 
                     foreach (Element e in s.Elements)
                     {
+                        flag = false;
                         count++;
 
                         if (e.Average != Double.NaN) // Won't bother with cells where data does not exist (assumes parser set average in elements with no data to Double.Nan)
                         {
                             // Write Analyte concentrations
                             dataws.Cells[row, col + 1].Value = e.Average;
+                            dataws.Cells[row, col + 1].Style.Numberformat.Format = "0.000";
 
                             // Write RSD
                             dataws.Cells[row, col + 1 + s.Elements.Count + 2].Value = e.RSD;
+                            dataws.Cells[row, col + 1 + s.Elements.Count + 2].Style.Numberformat.Format = "0.000";
 
                             // Do QA/QC formatting to analyte concentrations
                             #region QA/AC Formatting
@@ -336,11 +344,14 @@ namespace WaterAnalysisTool.Loader
                                 else if (!flag)
                                 {
                                     Double highest = 0.0;
+                                    int i = 0;
 
                                     foreach (Sample std in this.CalibrationStandards.Samples)
                                     {
-                                        if (std.Elements[count].Average > highest)
-                                            highest = std.Elements[count - 1].Average;
+                                        if (std.Elements[i].Average > highest)
+                                            highest = std.Elements[i].Average;
+
+                                        i++;
                                     }
 
                                     if (e.Average > highest)
@@ -360,7 +371,6 @@ namespace WaterAnalysisTool.Loader
             rowEnd = row - 1;
 
             #region Write Unique Rows
-            // TODO determine if we want to write formulas for elements that weren't measure for (have no data, see examples where there are formula errors)
             switch (type)
             {
                 case "CalibrationSamples":
@@ -371,6 +381,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "AVERAGE(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0.000";
                     }
 
                     row++;
@@ -381,6 +392,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "3*STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0.000";
                     }
 
                     row++;
@@ -391,6 +403,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "10*STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0.000";
                     }
 
                     break;
@@ -403,6 +416,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "AVERAGE(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0.000";
                     }
 
                     row++;
@@ -413,6 +427,7 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "(" + dataws.Cells[rowEnd + 1, col].Address + "-" + dataws.Cells[rowStart - 1, col].Address + ")/" + dataws.Cells[rowStart - 1, col].Address + "*100";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0";
                     }
 
                     break;
@@ -425,32 +440,41 @@ namespace WaterAnalysisTool.Loader
                     {
                         dataws.Cells[row, col].Formula = "AVERAGE(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0.000";
                     }
 
                     row++;
                     dataws.Cells[row, 1].Value = "rsd (%)";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
+                    int i = 0;
                     for (col = 3; col <= count + 2; col++)
                     {
                         dataws.Cells[row, col].Formula = "STDEV(" + dataws.Cells[rowStart, col].Address + ":" + dataws.Cells[rowEnd, col].Address + ")/" + dataws.Cells[rowEnd + 1, col].Address + "*100";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0";
 
-                        if (samples.RSD[count - 1] > 10)
+                        if (samples.RSD[i] > 10)
                             dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick);
+
+                        i++;
                     }
 
                     row++;
                     dataws.Cells[row, 1].Value = "recovery (%)";
                     dataws.Cells[row, 1].Style.Font.Bold = true;
 
+                    i = 0;
                     for (col = 3; col <= count + 2; col++)
                     {
                         dataws.Cells[row, col].Formula = dataws.Cells[rowEnd + 1, col].Address + "/" + dataws.Cells[rowStart - 1, col].Address + "*100";
                         dataws.Cells[row, col].Style.Font.Bold = true;
+                        dataws.Cells[row, col].Style.Numberformat.Format = "0";
 
-                        if (samples.Recovery[count - 1] < 90 || samples.Recovery[count - 1] > 110)
-                            dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick); 
+                        if (samples.Recovery[i] < 90 || samples.Recovery[i] > 110)
+                            dataws.Cells[row, col].Style.Font.Color.SetColor(Color.Firebrick);
+
+                        i++;
                     }
 
                     break;
@@ -502,66 +526,6 @@ namespace WaterAnalysisTool.Loader
                 row++;
             }
 
-            /******************************************** TESTING *******************************************
-
-            calibws.Cells[4, 3].Value = 0;
-            calibws.Cells[5, 3].Value = 0.02;
-            calibws.Cells[6, 3].Value = 0.1;
-            calibws.Cells[7, 3].Value = 0.2;
-            calibws.Cells[8, 3].Value = 1;
-            calibws.Cells[9, 3].Value = 2;
-            calibws.Cells[10, 3].Value = 4;
-
-            calibws.Cells[4, 4].Value = 0;
-            calibws.Cells[5, 4].Value = 0.004;
-            calibws.Cells[6, 4].Value = 0.02;
-            calibws.Cells[7, 4].Value = 0.04;
-            calibws.Cells[8, 4].Value = 0.2;
-            calibws.Cells[9, 4].Value = 0.4;
-            calibws.Cells[10, 4].Value = 0.8;
-
-            calibws.Cells[4, 5].Value = 0;
-            calibws.Cells[5, 5].Value = 0.004;
-            calibws.Cells[6, 5].Value = 0.02;
-            calibws.Cells[7, 5].Value = 0.04;
-            calibws.Cells[8, 5].Value = 0.2;
-            calibws.Cells[9, 5].Value = 0.4;
-            calibws.Cells[10, 5].Value = 0.8;
-
-            calibws.Cells[4, 6].Value = 0;
-            calibws.Cells[5, 6].Value = 0.02;
-            calibws.Cells[6, 6].Value = 0.1;
-            calibws.Cells[7, 6].Value = 0.2;
-            calibws.Cells[8, 6].Value = 1;
-            calibws.Cells[9, 6].Value = 2;
-            calibws.Cells[10, 6].Value = 4;
-
-            calibws.Cells[4, 7].Value = 0;
-            calibws.Cells[5, 7].Value = 0.03;
-            calibws.Cells[6, 7].Value = 0.15;
-            calibws.Cells[7, 7].Value = 0.3;
-            calibws.Cells[8, 7].Value = 1.5;
-            calibws.Cells[9, 7].Value = 3;
-            calibws.Cells[10, 7].Value = 6;
-
-            calibws.Cells[4, 8].Value = 0;
-            calibws.Cells[5, 8].Value = 0.005;
-            calibws.Cells[6, 8].Value = 0.025;
-            calibws.Cells[7, 8].Value = 0.05;
-            calibws.Cells[8, 8].Value = 0.25;
-            calibws.Cells[9, 8].Value = 0.5;
-            calibws.Cells[10, 8].Value = 1;
-
-            calibws.Cells[4, 9].Value = 0;
-            calibws.Cells[5, 9].Value = 0.004;
-            calibws.Cells[6, 9].Value = 0.02;
-            calibws.Cells[7, 9].Value = 0.04;
-            calibws.Cells[8, 9].Value = 0.2;
-            calibws.Cells[9, 9].Value = 0.4;
-            calibws.Cells[10, 9].Value = 0.8;
-
-            /********************************************* END TESTING *********************************************/
-
             int numSamples = row - 4;
 
             int endRow = row + 2;
@@ -580,9 +544,8 @@ namespace WaterAnalysisTool.Loader
 
                 using (var p = new ExcelPackage(fi))
                 {
-                    // TODO this index [2] may change depending on if the CheckStandards.xlxs file changing
-                    ExcelWorksheet standardsws = p.Workbook.Worksheets[2];
-                
+                    ExcelWorksheet standardsws = p.Workbook.Worksheets[2]; // This index [2] may change depending on if the CheckStandards.xlxs file changing
+
                     // Find Calibration Standards section
                     row = 1;
                     int blankCount = 0;
@@ -641,19 +604,15 @@ namespace WaterAnalysisTool.Loader
                         numStandards++;
                     }
 
-                    // Create the chart
-                    ExcelChart calCurve = calibws.Drawings.AddChart("Calibration Curve", eChartType.XYScatter);
-                    calCurve.Title.Text = "Calibration Curve";
-                    calCurve.SetPosition(endRow + 2, 0, 1, 0);
-                    calCurve.SetSize(600, 400);
-                    calCurve.YAxis.MinValue = 0;
-                    calCurve.XAxis.MinValue = 0;
-                    
+                    // CREATE CHARTS
+
+                    ExcelChart newGraph = null;
                     ExcelRange yrange = null, xrange = null;
                     ExcelChartSerie s = null;
 
                     bool found = false;
-                    int seriesIndex = 0; // for naming the series
+
+                    int count = 0, graphCol = 1, graphRow = endRow + 2;
 
                     // Search through Standard element names to match up with Sample element names, and graph them
                     for (int sampleElementCol = 3; calibws.Cells[2, sampleElementCol].Value != null; sampleElementCol++)
@@ -670,21 +629,38 @@ namespace WaterAnalysisTool.Loader
                                 yrange = calibws.Cells[4, sampleElementCol, 3 + numSamples, sampleElementCol];
                                 xrange = calibws.Cells[startRow, standardElementCol, numStandards + startRow - 1, standardElementCol];
 
-                                s = calCurve.Series.Add(yrange, xrange);
-                                calCurve.Series[seriesIndex].Header = calibws.Cells[2, sampleElementCol].Value.ToString(); // names each series                              
-                                s.TrendLines.Add(eTrendLine.Linear);
-                                seriesIndex++;
-                                // TODO: find a way to hide the trendline equation (?)
+                                newGraph = calibws.Drawings.AddChart(calibws.Cells[2, sampleElementCol].Value.ToString(), eChartType.XYScatter);
+                                newGraph.Title.Text = calibws.Cells[2, sampleElementCol].Value.ToString();
+
+                                // This is for output formatting
+                                if(count < 5)
+                                {
+                                    newGraph.SetPosition(graphRow, 0, graphCol, 0);
+                                    graphCol += 5;
+                                    count++;
+                                }
+                                else
+                                {
+                                    count = 0;
+                                    graphCol = 1;
+                                    graphRow += 17;
+
+                                    newGraph.SetPosition(graphRow, 0, graphCol, 0);
+                                    graphCol += 5;
+                                    count++;
+                                }
+                                
+                                newGraph.SetSize(300, 250);
+                                newGraph.YAxis.MinValue = 0;
+                                newGraph.XAxis.MinValue = 0;
+
+                                s = newGraph.Series.Add(yrange, xrange);
+                                ExcelChartTrendline tl = s.TrendLines.Add(eTrendLine.Linear);
+                                tl.DisplayRSquaredValue = false;
+                                tl.DisplayEquation = false;
                             }
                         }
-                    }
-
-
-                    yrange = calibws.Cells[endRow - 1, 2, endRow - 1, col];
-                    xrange = calibws.Cells[endRow, 2, endRow, col];
-
-                    var series1 = calCurve.Series.Add(yrange, xrange);
-                    series1.TrendLines.Add(eTrendLine.Linear);               
+                    }             
                     
                 }
 

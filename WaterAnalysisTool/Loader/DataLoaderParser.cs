@@ -28,7 +28,7 @@ namespace WaterAnalysisTool.Loader
         /* Constructors */
 
 
-        public DataLoaderParser (DataLoader loader, StreamReader inf)
+        public DataLoaderParser(DataLoader loader, StreamReader inf)
         {
             this.Loader = loader;
             this.Input = inf;
@@ -45,7 +45,7 @@ namespace WaterAnalysisTool.Loader
         /* Public Methods */
 
 
-        public void Parse ()
+        public void Parse()
         {
             this.Input.ReadLine(); // Consumes empty line at the beginning of the file
             this.ParseCheckStandards();
@@ -68,7 +68,7 @@ namespace WaterAnalysisTool.Loader
         // SampleGroup, Sample & Element creation
 
 
-        private SampleGroup CreateSampleGroup (List<Sample> sampleList, string name, bool skipFirst)
+        private SampleGroup CreateSampleGroup(List<Sample> sampleList, string name, bool skipFirst)
         {
             if (sampleList == null || name == null)
                 throw new ArgumentException("The SampleGroup you are trying to create will contain a null member variable\n");
@@ -77,7 +77,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private Sample CreateSample (string method, string name, string comment, string runTime, string sampleType, Int32 repeats)
+        private Sample CreateSample(string method, string name, string comment, string runTime, string sampleType, Int32 repeats)
         {
             if (method == null || name == null || comment == null || runTime == null || sampleType == null || repeats < 0)
                 throw new ArgumentNullException("The Sample you are trying to create will contain a null member variable\n");
@@ -85,8 +85,8 @@ namespace WaterAnalysisTool.Loader
             return new Sample(method, name, comment, runTime, sampleType, repeats); // TODO see sample constructors
         }
 
-        
-        private Element CreateElement (string name, string units, Double avg, Double stddev, Double rsd)
+
+        private Element CreateElement(string name, string units, Double avg, Double stddev, Double rsd)
         {
             if (name == null || units == null)
                 throw new ArgumentNullException("The Element you are trying to instantiate will contain a null member variable\n");
@@ -95,7 +95,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void AddElementToSample (Sample sample, Element element)
+        private void AddElementToSample(Sample sample, Element element)
         {
             if (sample == null)
                 throw new ArgumentNullException("The sample you are attempting to add an element to is null\n");
@@ -214,7 +214,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private Sample ParseHeader ()
+        private Sample ParseHeader()
         {
             Sample sample;
             List<string> stringList = new List<string>();
@@ -257,7 +257,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void ParseResults (Sample sample)
+        private void ParseResults(Sample sample)
         {
             this.CheckForNullSample(sample);
             List<string> stringList = new List<string>();
@@ -309,7 +309,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void ParseInternalStandards (Sample sample)
+        private void ParseInternalStandards(Sample sample)
         {
             this.CheckForNullSample(sample);
 
@@ -330,7 +330,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void AddSampleToList (Sample samp)
+        private void AddSampleToList(Sample samp)
         {
             this.CheckForNullSample(samp);
             bool certifiedValue = false;
@@ -371,7 +371,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void PassToDataLoader ()
+        private void PassToDataLoader()
         {
             foreach (List<Sample> sampleList in this.CertifiedValueList)
                 this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(sampleList, "Certified Values", true));
@@ -385,7 +385,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void CreateNewSampleSubList (Sample samp)
+        private void CreateNewSampleSubList(Sample samp)
         {
             List<Sample> tempList = new List<Sample>();
             tempList.Add(samp);
@@ -393,7 +393,7 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        private void CheckForNullSample (Sample samp)
+        private void CheckForNullSample(Sample samp)
         {
             if (samp == null)
                 throw new ArgumentNullException("The sample that was passed in is null\n");
