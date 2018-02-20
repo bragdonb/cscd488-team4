@@ -11,7 +11,7 @@ namespace WaterAnalysisTool.Utils
         #region Public Methods
         public static int LevenshteinDistance(String s, String t)
         {
-            if (s.Equals("") || s == null)
+            if(s.Equals("") || s == null)
             {
                 if (t.Equals("") || t == null)
                     return 0;
@@ -26,9 +26,9 @@ namespace WaterAnalysisTool.Utils
             int m = t.Length;
             int[,] d = new int[n + 1, m + 1];
 
-            for (int i = 1; i <= n; i++)
+            for(int i = 1; i <= n; i++)
             {
-                for (int j = 1; j <= m; j++)
+                for(int j = 1; j <=m; j++)
                 {
                     int cost = (t[j - 1] == s[i - 1]) ? 0 : 1;
                     int min1 = d[i - 1, j] + 1;
@@ -40,41 +40,41 @@ namespace WaterAnalysisTool.Utils
 
             return d[n, m];
         }
-
+        
         public static int LongestCommonSubstring(String s, String t)
         {
-            if (s.Equals("") || s == null)
+            if(s.Equals("") || s == null)
                 return 0;
-
-            if (t.Equals("") || s == null)
+            
+            if(t.Equals("") || s == null)
                 return 0;
-
+            
             int n = s.Length;
             int m = t.Length;
             int maxlen = 0;
             int[,] d = new int[n, m];
-
-            for (int i = 0; i < n; i++)
+            
+            for(int i = 0; i < n; i++)
             {
-                for (int j = 0; j < m; j++)
+                for(int j = 0; j < m; j++)
                 {
-                    if (s[i] != t[j])
+                    if(s[i] != t[j])
                         d[i, j] = 0;
-
+                    
                     else
                     {
-                        if (i == 0 || j == 0)
+                        if(i == 0 || j == 0)
                             d[i, j] = 1;
-
+                        
                         else
                             d[i, j] = d[i - 1, j - 1] + 1;
-
-                        if (d[i, j] > maxlen)
+                        
+                        if(d[i, j] > maxlen)
                             maxlen = d[i, j];
                     }
                 }
             }
-
+            
             return maxlen;
         }
         #endregion

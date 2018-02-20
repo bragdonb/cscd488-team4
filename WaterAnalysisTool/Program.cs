@@ -11,32 +11,26 @@ namespace WaterAnalysisTool
 {
     class Program
     {
-        public const double threshold = 0.7;
-        public const double version = 1.0;
+        #region Constants
+        public const double CoD_THRESHOLD = 0.7;
+        public const double VERSION_NUMBER = 1.0;
+        public const String COMMAND_REGEX = "[^\\s\"']+|\"([^\"]*)\"|'([^']*)'";
+        #endregion
 
-        // TODO pretty sure if no file extension is added to the output file argument for the parse command things will break. Need to test once parser is done.
-        // TODO there is some duplicate code in the Parse and Analyze Command regions for checking if the user wants to continue with an overwrite operation. Look into reducing.
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            // The functionality of main:
-            // 1. Awaits input in from user
-            //  1.1. Accepts a command to parse the ICP-AES file (parse <location/name of input> <location/name for output>)
-            //      1.1.1. Create a new ExcelPackage
-            //      1.1.2. Set the title in the packages properties to the name of the output file (sans the extension)
-            //      1.1.3. Create a new DataLoader and call its load function
-            //  1.2. Accepts a command to create correlation matrices (analyze <location/name of input> <r^2 threshold>)
-
             FileInfo infile = null, outfile = null; ;
             Double r2val;
             bool flag;
 
             String stringArgs = null;
-            Regex r = new Regex("[^\\s\"']+|\"([^\"]*)\"|'([^']*)'");
+            Regex r = new Regex(COMMAND_REGEX);
             MatchCollection arguments = null;
 
             // Startup Message
-            Console.WriteLine("ICP-AES Text File Parser version " + version + ".\nType \"usage\" for a list of commands.\n");
+            Console.WriteLine("ICP-AES Text File Parser version " + VERSION_NUMBER + ".\nType \"usage\" for a list of commands.\n");
 
+            #region Command Loop
             do
             {
                 try
@@ -52,155 +46,6 @@ namespace WaterAnalysisTool
                     if (stringArgs.ToLower().Equals("usage"))
                         Console.WriteLine("\tparse <location/name of input> <location/name for output>\n\tanalyze <location/name of input> <r^2 threshold>\n\tType \"exit\" to exit.");
 
-                    #region Testing
-                    else if (stringArgs.ToLower().Equals("test loader"))
-                    {
-                        SampleGroup CalibrationSamples;
-                        SampleGroup CalibrationStandards;
-                        SampleGroup QualityControlSamples;
-                        SampleGroup CertifiedValueSamples_1;
-                        SampleGroup CertifiedValueSamples_2;
-                        SampleGroup Samples_1;
-                        SampleGroup Samples_2;
-
-                        Sample s = null;
-                        List<Sample> list = new List<Sample>();
-
-                        Random random = new Random();
-
-                        FileInfo fi = new FileInfo(@"tester.xlsx");
-                        if (fi.Exists)
-                            fi.Delete();
-
-                        using (var p = new ExcelPackage(new FileInfo(@"tester.xlsx")))
-                        {     
-                            p.Workbook.Properties.Title = "Title of Workbook";
-                            //p.Workbook.Worksheets.Add("Data");
-                            //p.Workbook.Worksheets.Add("Calibration Standards");
-
-
-                            DataLoader loader = new DataLoader(null, p);
-
-                            #region Sample & Sample Group Creation
-                            for(int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Calibration Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                                for(int j = 0; j < 10; j++)
-                                  s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-
-                                list.Add(s);
-                            }
-
-                            CalibrationSamples = new SampleGroup(list, "CalibrationSamples", false);
-                            list.Clear();
-
-                            for (int i = 0; i < 7; i++)
-                            {
-                                s = new Sample("Method Name", "Calibration Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                                //comment out this for-loop to test using data below
-                                for(int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-                                /******************** TESTING FOR DATA LOADER CALIBRATION CURVE ********************
-                                s.AddElement(new Element("Al3082", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("Cd2144", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("Cd2265", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("Fe2599", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("K_7664", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("As1890", "Units", random.NextDouble(), 1.0, 1.0));
-                                s.AddElement(new Element("Mn2576", "Units", random.NextDouble(), 1.0, 1.0));
-                                /*********************************** END TESTING ***********************************/
-
-                                list.Add(s);
-                            }
-
-                            CalibrationStandards = new SampleGroup(list, "CalibrationSamples", false);
-                            list.Clear();
-
-                            for (int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Quality Control Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                               for (int j = 0; j < 10; j++)
-                                   s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-
-                                list.Add(s);
-
-                            }
-
-                            QualityControlSamples = new SampleGroup(list, "QualityControlSamples", true);
-                            list.Clear();
-
-                            for(int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Certified Value (1) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                                for (int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-                                list.Add(s);
-                            }
-
-                            CertifiedValueSamples_1 = new SampleGroup(list, "CertifiedValueSamples_1", true);
-                            list.Clear();
-
-                            for(int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Certified Value (2) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                                for (int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-                                list.Add(s);
-                            }
-
-                            CertifiedValueSamples_2 = new SampleGroup(list, "CertifiedValueSamples_2", true);
-                            list.Clear();
-
-                            for(int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Generic (1) Sample #" + i, DateTime.Now.ToString(), "Unk", 3);
-
-                                for (int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-                                list.Add(s);
-                            }
-
-                            Samples_1 = new SampleGroup(list, "Samples_1", false);
-                            list.Clear();
-
-                            for(int i = 0; i < 10; i++)
-                            {
-                                s = new Sample("Method Name", "Generic (2) Sample #" + i, DateTime.Now.ToString(), "QC", 3);
-
-                                for (int j = 0; j < 10; j++)
-                                    s.AddElement(new Element("Elem. #" + j, "Units", j * random.NextDouble(), 1.0, 1.0));
-
-                                list.Add(s);
-                            }
-
-                            Samples_2 = new SampleGroup(list, "Samples_2", false);
-                            list.Clear();
-
-                            loader.AddCalibrationSampleGroup(CalibrationSamples);
-                            loader.AddCalibrationStandard(CalibrationStandards);
-                            loader.AddQualityControlSampleGroup(QualityControlSamples);
-                            loader.AddCertifiedValueSampleGroup(CertifiedValueSamples_1);
-                            loader.AddCertifiedValueSampleGroup(CertifiedValueSamples_2);
-                            loader.AddSampleGroup(Samples_1);
-                            loader.AddSampleGroup(Samples_2);
-                            #endregion
-
-                            loader.Load(); // Load calls Parse, don't need to in main; also saves the workbook
-                        }
-                    }
-                    #endregion
-
                     else
                     {
                         // Check if stringArgs matches expected command structure
@@ -211,16 +56,22 @@ namespace WaterAnalysisTool
                             #region Parse Command
                             if (arguments[0].Value.ToLower().Equals("parse"))
                             {
-                                String file = arguments[1].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
-                                if (!file.Contains(".")) // If it has no extension, add ".txt"
-                                    file = file + ".txt";
-                                infile = new FileInfo(file);
+                                if (arguments.Count > 2)
+                                {
+                                    // Input file cleaning
+                                    String file = arguments[1].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
+                                    if (!file.Contains(".")) // If it has no extension, add ".txt"
+                                        file = file + ".txt";
+                                    infile = new FileInfo(file);
 
-                                if (infile.Exists)
-                                { 
-                                    if (arguments.Count > 2)
+                                    // Output file cleaning
+                                    file = arguments[2].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
+                                    if (!file.Contains(".")) // If it has no extension, add ".xlsx"
+                                        file = file + ".xlsx";
+                                    outfile = new FileInfo(file);
+
+                                    if (infile.Exists)
                                     {
-                                        outfile = new FileInfo(@arguments[2].Value);
                                         if (outfile.Exists)
                                         {
                                             Console.WriteLine("\tA file of the name " + outfile.Name + " already exists at " + (outfile.ToString().Substring(0, outfile.Name.Length)) + ".");
@@ -235,7 +86,7 @@ namespace WaterAnalysisTool
                                             {
                                                 outfile.Delete();
 
-                                                using (ExcelPackage p = new ExcelPackage(new FileInfo(@arguments[2].Value)))
+                                                using (ExcelPackage p = new ExcelPackage(outfile))
                                                 {
                                                     p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
 
@@ -247,7 +98,7 @@ namespace WaterAnalysisTool
 
                                         else
                                         {
-                                            using (ExcelPackage p = new ExcelPackage(new FileInfo(@arguments[2].Value)))
+                                            using (ExcelPackage p = new ExcelPackage(outfile))
                                             {
                                                 p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
 
@@ -256,10 +107,13 @@ namespace WaterAnalysisTool
                                             }
                                         }
                                     }
+
+                                    else
+                                        Console.WriteLine("\tCould not locate " + infile.ToString());
                                 }
 
                                 else
-                                    Console.WriteLine("\tCould not locate " + infile.ToString());
+                                    Console.WriteLine("\t" + stringArgs + " is an invalid command. For a list of valid commands enter \"usage\".");
                             }
                             #endregion
 
@@ -307,7 +161,7 @@ namespace WaterAnalysisTool
 
                                                     if (!flag)
                                                     {
-                                                        AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
+                                                        AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, r2val);
                                                         analyticsLoader.Load();
                                                     }
                                                 }
@@ -350,7 +204,7 @@ namespace WaterAnalysisTool
 
                                             if (!flag)
                                             {
-                                                AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, threshold);
+                                                AnalyticsLoader analyticsLoader = new AnalyticsLoader(p, CoD_THRESHOLD);
                                                 analyticsLoader.Load();
                                             }
                                         }
@@ -371,16 +225,16 @@ namespace WaterAnalysisTool
                     }
                 }
 
-                // Ideally, we would never get here...
+                // Exception catching
                 catch(Exception e)
                 {
-                    //Console.WriteLine("\t" + e.Message);
-                    Console.WriteLine("\t" + e.GetType() + " " + e.Message);
+                    // Console.WriteLine("\t" + e.Message);
                     Console.WriteLine("\t" + e.ToString());
                 }
 
                 Console.WriteLine(); // Some formatting
             } while (!stringArgs.ToLower().Equals("exit"));
+            #endregion
 
             Console.WriteLine("Exiting...");
         }
