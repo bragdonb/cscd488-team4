@@ -20,14 +20,17 @@ namespace WaterAnalysisTool.Loader
         private List<List<Sample>> CertifiedValueSamples; // When adding to this you will need to find the existing list with matching name, may not always exist
         private List<List<Sample>> Samples;
 
+        private ExcelWorksheet Standardsws;
+
         private const int LEVENSHTEIN_DISTANCE = 3; // Minimum distance needed for the parser to think that sample names are similar enough to group them together
         #endregion
 
         #region Constructors
-        public DataParser (DataLoader loader, StreamReader inf)
+        public DataParser (DataLoader loader, StreamReader inf, ExcelWorksheet stdws)
         {
             this.Loader = loader;
             this.Input = inf;
+            this.Standardsws = stdws;
 
             this.CalibrationSamples = new List<Sample>();
             this.CalibrationStandards = new List<Sample>();
@@ -36,111 +39,103 @@ namespace WaterAnalysisTool.Loader
             this.Samples = new List<List<Sample>>();
 
             #region Initialize QualityControlSamples and CertifiedValueSamples from CheckStandards.xlsx config file
-            FileInfo fi = new FileInfo("CheckStandards.xlsx");
-            if (!fi.Exists)
-                throw new FileNotFoundException("The CheckStandards.xlsx config file does not exist or could not be found and a formatted excel worksheet could not be generated.");
+            int row = 1, col = 3, index = 0;
+            int blankCount = 0;
 
-            using (var p = new ExcelPackage(fi))
-            {
-                var standardsws = p.Workbook.Worksheets[2];
-                int row = 1, col = 3, index = 0;
-                int blankCount = 0;
-
-                // Find all element names
-                List<String> elementNames = new List<string>();
-                while (standardsws.Cells[3, col].Value != null)
-                { 
-                    elementNames.Add(standardsws.Cells[3, col].Value.ToString());
-                    col++;
-                }
-
-                col = 3;
-
-                // Find Continuing Calibration Verification (CCV) section
-                while (blankCount < 5)
-                {
-                    if (standardsws.Cells[row, 1].Value != null)
-                    {
-                        if (!standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("continuing calibration verification (ccv)"))
-                        {
-                            row++;
-                            blankCount = 0;
-                        }
-
-                        else
-                            break;
-                    }
-
-                    else
-                    {
-                        blankCount++;
-                        row++;
-                    }
-                }
-
-                if (blankCount > 4)
-                    throw new ConfigurationErrorException("Could not find \"Continuing Calibration Verification (CCV)\" section in CheckStandards.xlsx config file.");
-
-                row++;
-
-                Sample calibstd = new Sample("", "CCV Standard", "", "QC", 0);
-                while(standardsws.Cells[row, col].Value != null)
-                {
-                    calibstd.Elements.Add(new Element(elementNames[index], "mg/L", Double.Parse(standardsws.Cells[row, col].Value.ToString()), 0.0, 0.0));
-                    col++;
-                    index++;
-                }
-
-                this.QualityControlSamples.Add(calibstd);
-
-                // Find Check Standards section
-                row = 1;
-                index = 0;
-                blankCount = 0;
-                while (blankCount < 5)
-                {
-                    if (standardsws.Cells[row, 1].Value != null)
-                    {
-                        if (!standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("check standards"))
-                        {
-                            row++;
-                            blankCount = 0;
-                        }
-
-                        else
-                            break;
-                    }
-
-                    else
-                    {
-                        blankCount++;
-                        row++;
-                    }
-                }
-
-                if (blankCount > 4)
-                    throw new ConfigurationErrorException("Could not find \"Check Standards\" section in CheckStandards.xlsx config file.");
-
-                row++;
-
-                while(standardsws.Cells[row, 1].Value != null)
-                {
-                    col = 3;
-                    List<Sample> sg = new List<Sample>();
-                    Sample checkstd = new Sample("", standardsws.Cells[row, 1].Value.ToString(), "", "QC", 0);
-                    
-                    while(standardsws.Cells[row, col].Value != null)
-                    {
-                        checkstd.Elements.Add(new Element(elementNames[index], "mg/L", Double.Parse(standardsws.Cells[row, col].Value.ToString()), 0.0, 0.0));
-                        col++;
-                    }
-
-                    row++;
-                    sg.Add(checkstd);
-                    this.CertifiedValueSamples.Add(sg);
-                }
-                #endregion
+            // Find all element names
+            List<String> elementNames = new List<string>();
+            while (Standardsws.Cells[3, col].Value != null)
+            { 
+                elementNames.Add(Standardsws.Cells[3, col].Value.ToString());
+                col++;
             }
+
+            col = 3;
+
+            // Find Continuing Calibration Verification (CCV) section
+            while (blankCount < 5)
+            {
+                if (Standardsws.Cells[row, 1].Value != null)
+                {
+                    if (!Standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("continuing calibration verification (ccv)"))
+                    {
+                        row++;
+                        blankCount = 0;
+                    }
+
+                    else
+                        break;
+                }
+
+                else
+                {
+                    blankCount++;
+                    row++;
+                }
+            }
+
+            if (blankCount > 4)
+                throw new ConfigurationErrorException("Could not find \"Continuing Calibration Verification (CCV)\" section in CheckStandards.xlsx config file.");
+
+            row++;
+
+            Sample calibstd = new Sample("", "CCV Standard", "", "QC", 0);
+            while(Standardsws.Cells[row, col].Value != null)
+            {
+                calibstd.Elements.Add(new Element(elementNames[index], "mg/L", Double.Parse(Standardsws.Cells[row, col].Value.ToString()), 0.0, 0.0));
+                col++;
+                index++;
+            }
+
+            this.QualityControlSamples.Add(calibstd);
+
+            // Find Check Standards section
+            row = 1;
+            index = 0;
+            blankCount = 0;
+            while (blankCount < 5)
+            {
+                if (Standardsws.Cells[row, 1].Value != null)
+                {
+                    if (!Standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("check standards"))
+                    {
+                        row++;
+                        blankCount = 0;
+                    }
+
+                    else
+                        break;
+                }
+
+                else
+                {
+                    blankCount++;
+                    row++;
+                }
+            }
+
+            if (blankCount > 4)
+                throw new ConfigurationErrorException("Could not find \"Check Standards\" section in CheckStandards.xlsx config file.");
+
+            row++;
+
+            while(Standardsws.Cells[row, 1].Value != null)
+            {
+                col = 3;
+                List<Sample> sg = new List<Sample>();
+                Sample checkstd = new Sample("", Standardsws.Cells[row, 1].Value.ToString(), "", "QC", 0);
+                    
+                while(Standardsws.Cells[row, col].Value != null)
+                {
+                    checkstd.Elements.Add(new Element(elementNames[index], "mg/L", Double.Parse(Standardsws.Cells[row, col].Value.ToString()), 0.0, 0.0));
+                    col++;
+                }
+
+                row++;
+                sg.Add(checkstd);
+                this.CertifiedValueSamples.Add(sg);
+            }
+            #endregion
         }
         #endregion
 
