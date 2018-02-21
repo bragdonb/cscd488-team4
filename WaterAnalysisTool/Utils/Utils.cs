@@ -77,6 +77,33 @@ namespace WaterAnalysisTool.Utils
             
             return maxlen;
         }
+
+        public static string CommonSubstring (string str1, string str2)
+        {
+            if (str1.Equals("") || str2 == null)
+                return "";
+
+            if (str1.Equals("") || str2 == null)
+                return "";
+
+            int row = 0; int col = 0;
+
+            int[,] sub = new int[str1.Length + 1, str2.Length + 1];
+
+            for (int w = 0; w < str1.Length; w++)
+                for (int x = 0; x < str2.Length; x++)
+                    if(str1[w] == str2[x])
+                    {
+                        int l = sub[w + 1, x + 1] = sub[w, x] + 1;
+                        if (l > sub[row, col])
+                        {
+                            row = w + 1;
+                            col = x + 1;
+                        }
+                    }
+
+            return str1.Substring(row - sub[row, col], sub[row, col]);
+        }
         #endregion
     }
 }
