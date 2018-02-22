@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using WaterAnalysisTool.Components;
 using WaterAnalysisTool.Exceptions;
 using OfficeOpenXml;
@@ -293,8 +294,9 @@ namespace WaterAnalysisTool.Loader
                 double avg;
                 double stddev;
                 double rsd;
+                string pattern = @"([a-zA-Z]*)(\s+)";
 
-                strArray[2] = strArray[2].Replace(" ", ""); // Removes the whitespace character in front avgs
+                strArray[2] = Regex.Replace(strArray[2], pattern, ""); // Removes the whitespace and "F" in front of avgs
 
                 if (!(double.TryParse(strArray[2], out avg)))
                     avg = Double.NaN;
