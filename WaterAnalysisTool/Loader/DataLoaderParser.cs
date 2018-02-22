@@ -1,10 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using WaterAnalysisTool.Components;
 using WaterAnalysisTool.Exceptions;
-using WaterAnalysisTool.Utils;
 using OfficeOpenXml;
 
 namespace WaterAnalysisTool.Loader
@@ -348,12 +346,24 @@ namespace WaterAnalysisTool.Loader
             {
                 for (int x = 0; x < this.CertifiedValueList.Count; x++)
                 {
-                    string subStr = Utils.Utils.CommonSubstring(samp.Name, this.CertifiedValueList[x][0].Name);
-
-                    if (samp.Name.StartsWith(this.CertifiedValueList[x][0].Name.Substring(0, 4)) && this.CertifiedValueList[x][0].Name.Substring(subStr.Length).Contains(":")) // SoilB in the input txt file is SoilB. In the CheckStandards.xlsx it is Soil B. Makes it problematic for this line
+                    if (samp.Name.StartsWith(this.CertifiedValueList[x][0].Name.Substring(0, 3))) // SoilB in the input txt file is SoilB. In the CheckStandards.xlsx it is Soil B. Makes it problematic for this line
                     {                                                                              // Because of this condition there are duplicate TMDW lists, one list has a first sample named "TMDW", the other list has a first sample named "TMDW 1:10", Basically need a more robust condition here. The one sample named DFW 17-002 Dup is also in it's own list when it shouldn't be. This is a super long comment
-                        this.CertifiedValueList[x].Add(samp);
-                        certifiedValue = true;
+                        int w = 1;
+
+                        for (; w < this.CertifiedValueList.Count && !(certifiedValue); w++)
+                        {
+                            if (samp.Name.Equals(this.CertifiedValueList[w][0].Name))
+                            {
+                                this.CertifiedValueList[w].Add(samp);
+                                certifiedValue = true;
+                            }
+                        }
+
+                        if (w == this.CertifiedValueList.Count && !(certifiedValue))
+                        {
+                            this.CertifiedValueList[x].Add(samp);
+                            certifiedValue = true;
+                        }
                     }
                 }
 
@@ -383,7 +393,7 @@ namespace WaterAnalysisTool.Loader
                 this.Loader.AddCertifiedValueSampleGroup(new SampleGroup(sampleList, "Certified Values", true));
 
             foreach (List<Sample> sampleList in this.SampleList)
-                this.Loader.AddSampleGroup(new SampleGroup(sampleList, "Samples", false));
+                this.Loader.AddSampleGroup(new SampleGroup(sampleList, sampleList[0].Name.Substring(0, sampleList[0].Name.LastIndexOf(' ')), false));
 
             this.Loader.AddCalibrationStandard(this.CreateSampleGroup(this.CalibrationStandardsList, "Calibration Standards", false)); // CalibStd
             this.Loader.AddCalibrationSampleGroup(this.CreateSampleGroup(this.CalibrationSamplesList, "Quality Control Solutions", false)); // Instrument Blank
