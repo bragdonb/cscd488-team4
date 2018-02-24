@@ -11,9 +11,7 @@ namespace WaterAnalysisTool.Loader
     class DataLoaderParser
     {
 
-
-        /* Attributes */
-
+        #region Attributes
 
         private DataLoader Loader;
         private StreamReader Input;
@@ -25,9 +23,9 @@ namespace WaterAnalysisTool.Loader
         private List<List<Sample>> SampleList; // Samples -> Sample Type: Unk --- These will have very different names (Perry/DFW/etc.)
         private List<List<Sample>> CertifiedValueList;  // Certified Values (SoilB/TMDW/etc.) -> Sample Type: QC --- The analytes (elements) found under Check Standards in the xlsx file will not always match up with the analytes of the Certified Value samples
 
+        #endregion
 
-        /* Constructors */
-
+        #region Constructors
 
         public DataLoaderParser(DataLoader loader, StreamReader inf)
         {
@@ -42,9 +40,9 @@ namespace WaterAnalysisTool.Loader
             this.CertifiedValueList = new List<List<Sample>>();
         }
 
+        #endregion
 
-        /* Public Methods */
-
+        #region Public Methods
 
         public void Parse()
         {
@@ -62,12 +60,9 @@ namespace WaterAnalysisTool.Loader
             this.PassToDataLoader();
         }
 
+        #endregion
 
-        /* Private Methods */
-
-
-        // SampleGroup, Sample & Element creation
-
+        #region Private Methods
 
         private SampleGroup CreateSampleGroup(List<Sample> sampleList, string name, bool skipFirst)
         {
@@ -83,7 +78,7 @@ namespace WaterAnalysisTool.Loader
             if (method == null || name == null || comment == null || runTime == null || sampleType == null || repeats < 0)
                 throw new ArgumentNullException("The Sample you are trying to create will contain a null member variable\n");
 
-            return new Sample(method, name, comment, runTime, sampleType, repeats); // TODO see sample constructors
+            return new Sample(method, name, comment, runTime, sampleType, repeats);
         }
 
 
@@ -107,9 +102,6 @@ namespace WaterAnalysisTool.Loader
         }
 
 
-        // Parse() helper methods
-
-
         private void ParseCheckStandards()
         {
             FileInfo fi = new FileInfo("CheckStandards.xlsx");
@@ -119,7 +111,7 @@ namespace WaterAnalysisTool.Loader
             using (ExcelPackage ep = new ExcelPackage(fi))
             {
                 ExcelWorksheet ews = ep.Workbook.Worksheets[2];
-                int row = 3; // We start from row 3. Assuming the format of CheckStandards.xlsx will remain the same
+                int row = 3; // Start from row 3. Assuming the format of CheckStandards.xlsx will remain the same
                 int col = 3;
                 int analyteCounter = 0;
                 String sampleName;
@@ -158,7 +150,7 @@ namespace WaterAnalysisTool.Loader
 
                     while (ews.Cells[row, col].Value != null)
                     {
-                        sampleName = ews.Cells[row, col].Value.ToString(); // Reads in the name of the sample. Name may need to be "Stated Value" (check the example output xlsx)
+                        sampleName = ews.Cells[row, col].Value.ToString(); // Reads in the name of the sample
                         tmpSample = new Sample("", sampleName, "", "", "QC", 0);
 
                         for (col = 3; col < analyteCounter + 3; col++) // Increment by three. Otherwise we could potentially miss the last two columns of analytes due to the value of the column (col) starting at 3 in the for loop
@@ -326,7 +318,7 @@ namespace WaterAnalysisTool.Loader
             if (this.Input.Peek() >= 0)
             {
                 str = this.Input.ReadLine();
-                strList = str.Split(','); // Do something with this?
+                strList = str.Split(',');
                 this.Input.ReadLine(); // Consumes empty line after Internal Standards section
             }
         }
@@ -348,8 +340,8 @@ namespace WaterAnalysisTool.Loader
             {
                 for (int x = 0; x < this.CertifiedValueList.Count; x++)
                 {
-                    if (samp.Name.StartsWith(this.CertifiedValueList[x][0].Name.Substring(0, 3))) // SoilB in the input txt file is SoilB. In the CheckStandards.xlsx it is Soil B. Makes it problematic for this line
-                    {                                                                              // Because of this condition there are duplicate TMDW lists, one list has a first sample named "TMDW", the other list has a first sample named "TMDW 1:10", Basically need a more robust condition here. The one sample named DFW 17-002 Dup is also in it's own list when it shouldn't be. This is a super long comment
+                    if (samp.Name.StartsWith(this.CertifiedValueList[x][0].Name.Substring(0, 3)))
+                    {
                         int w = 1;
 
                         for (; w < this.CertifiedValueList.Count && !(certifiedValue); w++)
@@ -416,5 +408,7 @@ namespace WaterAnalysisTool.Loader
             if (samp == null)
                 throw new ArgumentNullException("The sample that was passed in is null\n");
         }
+
+        #endregion
     }
 }
