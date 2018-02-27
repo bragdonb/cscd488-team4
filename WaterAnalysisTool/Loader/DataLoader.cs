@@ -510,36 +510,22 @@ namespace WaterAnalysisTool.Loader
             }
 
             // Write standards data
-            bool found = false;
-            int row = 4, elementRow = 2;
+            int row = 4;
             col = 1;
 
             foreach (Sample s in standards.Samples)
             {
                 col = 1;
 
-                String str;
                 calibws.Cells[row, col].Value = s.Name;
                 calibws.Cells[row, ++col].Value = s.RunTime;
 
-                col = 3;
                 foreach (Element e in s.Elements)
-                {
-                    found = false;
-                    for (col = 3; calibws.Cells[elementRow, col].Value != null && !found; col++)
-                    {
-                        str = calibws.Cells[elementRow, col].Value.ToString();
-                        if (e.Name.Equals(str))
-                        {
-                            found = true;
-                            calibws.Cells[row, col].Value = e.Average;
-                        }
-                    }
-                }
+                    calibws.Cells[row, ++col].Value = e.Average;
 
                 row++;
             }
-            
+
             int numSamples = row - 4;
 
             int endRow = row + 2;
@@ -624,7 +610,7 @@ namespace WaterAnalysisTool.Loader
                     ExcelRange yrange = null, xrange = null;
                     ExcelChartSerie s = null;
 
-                    found = false;
+                    bool found = false;
 
                     int count = 0, graphCol = 1, graphRow = endRow + 2;
 
