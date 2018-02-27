@@ -40,7 +40,7 @@ namespace WaterAnalysisTool.Loader
             }
 
             if (Standardsws == null)
-                throw new ConfigurationErrorException("Could not find a configuration sheet that matches the method: " + method);
+                throw new ConfigurationErrorException("Error: Could not find a configuration sheet that matches the method: " + method);
 
             this.Input = inf;
             this.Output = outf;
