@@ -29,7 +29,7 @@ namespace WaterAnalysisTool.Loader
         {
             FileInfo fi = new FileInfo("CheckStandards.xlsx");
             if (!fi.Exists)
-                throw new FileNotFoundException("The CheckStandards.xlsx config file does not exist or could not be found and the input file could not be parsed.\t\nPlease refer to the user manual for instructions on how to use the config file.");
+                throw new FileNotFoundException("Error: The CheckStandards.xlsx config file does not exist or could not be found and the input file could not be parsed.\t\nPlease refer to the user manual for instructions on how to use the config file.");
 
             ExcelPackage config = new ExcelPackage(fi);
 
