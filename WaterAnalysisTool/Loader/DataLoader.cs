@@ -151,7 +151,7 @@ namespace WaterAnalysisTool.Loader
                 this.Messages.Add("Error: Parser found zero generic samples. Could not generate formatted Excel sheet.");
 
             foreach (String msg in this.Messages)
-                Console.WriteLine("\t" + msg);
+                Console.WriteLine(msg);
         } // end Load
 
         #region Add<Sample>
@@ -501,7 +501,7 @@ namespace WaterAnalysisTool.Loader
             }
             #endregion
 
-            this.Messages.Add(type + " written to excel sheet successfully");
+            this.Messages.Add("Success: " + type + "(" + SampleGroup.Name + ") written to Excel Worksheet.");
 
             return  row + 2;
         }// end WriteSamples
@@ -529,38 +529,46 @@ namespace WaterAnalysisTool.Loader
             bool found = false;
             int row = 4, elementRow = 2;
             col = 1;
-
-            foreach (Sample s in standards.Samples)
+            
+            try
             {
-                col = 1;
-
-                String str;
-                calibws.Cells[row, col].Value = s.Name;
-                calibws.Cells[row, ++col].Value = s.RunTime;
-
-                col = 3;
-                foreach (Element e in s.Elements)
+                foreach (Sample s in standards.Samples)
                 {
-                    found = false;
-                    for (col = 3; calibws.Cells[elementRow, col].Value != null && !found; col++)
+                    col = 1;
+
+                    String str;
+                    calibws.Cells[row, col].Value = s.Name;
+                    calibws.Cells[row, ++col].Value = s.RunTime;
+
+                    col = 3;
+                    foreach (Element e in s.Elements)
                     {
-                        str = calibws.Cells[elementRow, col].Value.ToString();
-                        if (e.Name.Equals(str))
+                        found = false;
+                        for (col = 3; calibws.Cells[elementRow, col].Value != null && !found; col++)
                         {
-                            found = true;
-                            calibws.Cells[row, col].Value = e.Average;
+                            str = calibws.Cells[elementRow, col].Value.ToString();
+                            if (e.Name.Equals(str))
+                            {
+                                found = true;
+                                calibws.Cells[row, col].Value = e.Average;
+                            }
                         }
                     }
+
+                    row++;
                 }
 
-                row++;
+                int numSamples = row - 4;
+
+                int endRow = row + 2;
+
+                this.Messages.Add("Success: Calibration standards written to Excel Worksheet.");
             }
-
-            int numSamples = row - 4;
-
-            int endRow = row + 2;
-
-            this.Messages.Add("Calibration standards written to excel sheet successfully");
+            
+            catch(Exception e)
+            {
+               this.Messages.Add("Error: Could not write Calibration standards to Excel Worksheet. Reason: " + e.Message); 
+            }
 
             // Calibration Curve
             // 1. Open the CheckStandards.xlsx sheet where the stock solution concentrations can be found and read them in
@@ -684,13 +692,13 @@ namespace WaterAnalysisTool.Loader
                     }
                 }             
 
-                this.Messages.Add("Calibration curves generated successfully");
+                this.Messages.Add("Success: Calibration curves generated.");
                 #endregion
             }
 
             catch (Exception e)
             {
-                this.Messages.Add("Calibration curve could not be generated. Error: " + e.Message);
+                this.Messages.Add("Error: Calibration curves could not be generated. Reason: " + e.Message);
             }
         }// end WriteStandards
         #endregion
