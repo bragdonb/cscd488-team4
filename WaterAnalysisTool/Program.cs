@@ -15,11 +15,13 @@ namespace WaterAnalysisTool
         public const double CoD_THRESHOLD = 0.7;
         public const double VERSION_NUMBER = 1.0;
         public const String COMMAND_REGEX = "[^\\s\"']+|\"([^\"]*)\"|'([^']*)'";
+        public const String METHOD = "ICP-SS";
         #endregion
 
         public static void Main(string[] args)
         {
-            FileInfo infile = null, outfile = null; ;
+            FileInfo infile, outfile;
+            String method;
             Double r2val;
             bool flag;
 
@@ -37,6 +39,9 @@ namespace WaterAnalysisTool
                 {
                     // Reseting
                     flag = false;
+                    infile = null;
+                    outfile = null;
+                    method = null;
                     stringArgs = null;
                     arguments = null;
 
@@ -58,17 +63,32 @@ namespace WaterAnalysisTool
                             {
                                 if (arguments.Count > 2)
                                 {
+                                    #region Input cleaning
                                     // Input file cleaning
                                     String file = arguments[1].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
                                     if (!file.Contains(".")) // If it has no extension, add ".txt"
                                         file = file + ".txt";
                                     infile = new FileInfo(file);
 
+                                    if (!infile.Extension.Equals(".txt"))
+                                        throw new IOException("Input file must be a text file with the '.txt' extension.");
+
                                     // Output file cleaning
                                     file = arguments[2].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
                                     if (!file.Contains(".")) // If it has no extension, add ".xlsx"
                                         file = file + ".xlsx";
                                     outfile = new FileInfo(file);
+
+                                    if (!outfile.Extension.Equals(".xlsx") && !outfile.Extension.Equals(".xls") && !outfile.Extension.Equals(".xlsm") && !outfile.Extension.Equals(".xlm"))
+                                        throw new IOException("Output file must be compatible with Excel and have one of the following extensions: '.xlsx', '.xls', '.xlsm', or '.xlm'");
+
+                                    // Method cleaning
+                                    if (arguments.Count > 3) // There is an optional method argument (possibly)
+                                        method = arguments[3].Value.Replace("\"", "").Replace("\'", ""); // Get rid of quotes
+
+                                    else // There is no optional method argument, use default
+                                        method = METHOD;
+                                    #endregion
 
                                     if (infile.Exists)
                                     {
@@ -90,7 +110,7 @@ namespace WaterAnalysisTool
                                                 {
                                                     p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
 
-                                                    DataLoader loader = new DataLoader(infile.OpenText(), p);
+                                                    DataLoader loader = new DataLoader(infile.OpenText(), p, method);
                                                     loader.Load();
                                                 }
                                             }
@@ -102,7 +122,7 @@ namespace WaterAnalysisTool
                                             {
                                                 p.Workbook.Properties.Title = arguments[2].Value.Split('.')[0];
 
-                                                DataLoader loader = new DataLoader(infile.OpenText(), p);
+                                                DataLoader loader = new DataLoader(infile.OpenText(), p, method);
                                                 loader.Load();
                                             }
                                         }
@@ -228,8 +248,8 @@ namespace WaterAnalysisTool
                 // Exception catching
                 catch(Exception e)
                 {
-                    // Console.WriteLine("\t" + e.Message);
-                    Console.WriteLine("\t" + e.ToString());
+                    Console.WriteLine("\t" + e.Message);
+                    // Console.WriteLine("\t" + e.ToString());
                 }
 
                 Console.WriteLine(); // Some formatting
