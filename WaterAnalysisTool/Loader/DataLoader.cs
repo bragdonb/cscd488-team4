@@ -144,11 +144,11 @@ namespace WaterAnalysisTool.Loader
 
                 this.Output.Save();
 
-                this.Messages.Add("Formatted Excel sheet generated successfullly.");
+                this.Messages.Add("Success: Formatted Excel sheet generated.");
             }
 
             else
-                this.Messages.Add("Parser found zero generic samples. Could not genereate formmated Excel sheet.");
+                this.Messages.Add("Error: Parser found zero generic samples. Could not generate formatted Excel sheet.");
 
             foreach (String msg in this.Messages)
                 Console.WriteLine("\t" + msg);
