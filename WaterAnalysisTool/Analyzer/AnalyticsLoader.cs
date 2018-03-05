@@ -158,7 +158,7 @@ namespace WaterAnalysisTool.Analyzer
             }
 
             this.DataWorkbook.Save();
-            this.Messages.Add("Correlation matrix generated successfully.");
+            this.Messages.Add("Success: Correlation matrices generated.");
 
             foreach (String msg in this.Messages)
                 Console.WriteLine("\t" + msg);
@@ -206,7 +206,7 @@ namespace WaterAnalysisTool.Analyzer
 
             if (stdev1 == 0 || stdev1 == Double.NaN)
             {
-                msg = "Warning: Standard deviation for " + e1[0].Name + " is zero. Some r^2 values may be missing.";
+                msg = "Warning: Standard deviation for " + e1[0].Name + " is zero. Some R^2 values may be missing.";
 
                 if (!this.Messages.Contains(msg))
                     this.Messages.Add(msg);
@@ -214,7 +214,7 @@ namespace WaterAnalysisTool.Analyzer
 
             if (stdev2 == 0 || stdev2 == Double.NaN)
             {
-                msg = "Warning: Standard deviation for " + e2[0].Name + " is zero. Some r^2 values may be missing.";
+                msg = "Warning: Standard deviation for " + e2[0].Name + " is zero. Some R^2 values may be missing.";
 
                 if (!this.Messages.Contains(msg))
                     this.Messages.Add(msg);
