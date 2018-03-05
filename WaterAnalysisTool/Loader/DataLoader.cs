@@ -501,13 +501,16 @@ namespace WaterAnalysisTool.Loader
             }
             #endregion
 
-            this.Messages.Add("Success: " + type + "(" + SampleGroup.Name + ") written to Excel Worksheet.");
+            this.Messages.Add("Success: " + type + "(" + samples.Name + ") written to Excel Worksheet.");
 
             return  row + 2;
         }// end WriteSamples
 
         private void WriteStandards(ExcelWorksheet calibws, SampleGroup standards)
         {
+            int endRow = 0;
+            int numSamples = 0;
+
             // Write element header rows
             Sample headerSample = standards.Samples[standards.Samples.Count - 1];
 
@@ -558,9 +561,8 @@ namespace WaterAnalysisTool.Loader
                     row++;
                 }
 
-                int numSamples = row - 4;
-
-                int endRow = row + 2;
+                numSamples = row - 4;
+                endRow = row + 2;
 
                 this.Messages.Add("Success: Calibration standards written to Excel Worksheet.");
             }
@@ -574,71 +576,70 @@ namespace WaterAnalysisTool.Loader
             // 1. Open the CheckStandards.xlsx sheet where the stock solution concentrations can be found and read them in
             //  1.1 Have to worry about not every concentration in the standards list (these will have to be 0's in the .xlsx)
             // 2. Create a graph with the measured counts per second in the standards list over their respective stock solution concentration
-            try
-            {           
-                // Find Calibration Standards section
-                row = 1;
-                int blankCount = 0;
+       
+            // Find Calibration Standards section
+            row = 1;
+            int blankCount = 0;
 
-                while(blankCount < 5 && blankCount >= 0)
+            while(blankCount < 5 && blankCount >= 0)
+            {
+                if(Standardsws.Cells[row, 1].Value != null)
                 {
-                    if(Standardsws.Cells[row, 1].Value != null)
+                    if(!Standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("calibration standards"))
                     {
-                        if(!Standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("calibration standards"))
-                        {
-                                row++;
-                                blankCount = 0;
-                        }
-                        else
-                            break;
+                            row++;
+                            blankCount = 0;
                     }
-
                     else
-                    {
-                        blankCount++;
-                        row++;
-                    }
+                        break;
                 }
 
-                if(blankCount > 4)
-                    throw new ConfigurationErrorException("Could not find \"Calibration Standards\" section in CheckStandards.xlsx config file.");
-
-                row++;
-
-                // Find element names and amount of elements
-                int elemCol = 3, elemRow = 1;
-
-                while (Standardsws.Cells[elemRow, elemCol].Value == null)
-                    elemRow++;
-
-                while(Standardsws.Cells[elemRow, elemCol].Value != null)
+                else
                 {
-                    calibws.Cells[endRow, elemCol].Value = Standardsws.Cells[elemRow, elemCol].Value;
-                    calibws.Cells[endRow + 1, elemCol].Value = Standardsws.Cells[elemRow + 1, elemCol].Value;
-                    calibws.Cells[endRow, elemCol].Style.Font.Bold = true;
-                    calibws.Cells[endRow + 1, elemCol].Style.Font.Bold = true;
-                    elemCol++;
+                    blankCount++;
+                    row++;
                 }
+            }
 
-                endRow += 2;
-                int startRow = endRow;
-                int numStandards = 0;
+            if(blankCount > 4)
+                throw new ConfigurationErrorException("Could not find \"Calibration Standards\" section in CheckStandards.xlsx config file.");
+
+            row++;
+
+            // Find element names and amount of elements
+            int elemCol = 3, elemRow = 1;
+
+            while (Standardsws.Cells[elemRow, elemCol].Value == null)
+                elemRow++;
+
+            while(Standardsws.Cells[elemRow, elemCol].Value != null)
+            {
+                calibws.Cells[endRow, elemCol].Value = Standardsws.Cells[elemRow, elemCol].Value;
+                calibws.Cells[endRow + 1, elemCol].Value = Standardsws.Cells[elemRow + 1, elemCol].Value;
+                calibws.Cells[endRow, elemCol].Style.Font.Bold = true;
+                calibws.Cells[endRow + 1, elemCol].Style.Font.Bold = true;
+                elemCol++;
+            }
+
+            endRow += 2;
+            int startRow = endRow;
+            int numStandards = 0;
+            col = 1;
+
+            for ( ; Standardsws.Cells[row, col].Value != null; row++)
+            {
+                for(col = 1; col < elemCol; col++)
+                    calibws.Cells[endRow, col].Value = Standardsws.Cells[row, col].Value;
+
                 col = 1;
-
-                for ( ; Standardsws.Cells[row, col].Value != null; row++)
-                {
-                    for(col = 1; col < elemCol; col++)
-                        calibws.Cells[endRow, col].Value = Standardsws.Cells[row, col].Value;
-
-                    col = 1;
-                    endRow++;
-                    numStandards++;
-                }
+                endRow++;
+                numStandards++;
+            }
 
                 #region Calibration Curves
                 ExcelChart newGraph = null;
                 ExcelRange yrange = null, xrange = null;
-                ExcelChartSerie s = null;
+                ExcelChartSerie serie = null;
 
                 found = false;
 
@@ -684,8 +685,8 @@ namespace WaterAnalysisTool.Loader
                             newGraph.YAxis.MinValue = 0;
                             newGraph.XAxis.MinValue = 0;
 
-                            s = newGraph.Series.Add(yrange, xrange);
-                            ExcelChartTrendline tl = s.TrendLines.Add(eTrendLine.Linear);
+                            serie = newGraph.Series.Add(yrange, xrange);
+                            ExcelChartTrendline tl = serie.TrendLines.Add(eTrendLine.Linear);
                             tl.DisplayRSquaredValue = false;
                             tl.DisplayEquation = false;
                         }
@@ -694,12 +695,6 @@ namespace WaterAnalysisTool.Loader
 
                 this.Messages.Add("Success: Calibration curves generated.");
                 #endregion
-            }
-
-            catch (Exception e)
-            {
-                this.Messages.Add("Error: Calibration curves could not be generated. Reason: " + e.Message);
-            }
         }// end WriteStandards
         #endregion
     }   
