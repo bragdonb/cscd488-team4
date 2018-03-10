@@ -19,13 +19,29 @@ namespace WaterAnalysisTool.Loader
         private List<SampleGroup> Samples;                  // Generic Samples -> Sample Type: Unk
 
         private List<String> Messages;
+        private ExcelWorksheet Standardsws;
         private StreamReader Input;
         private ExcelPackage Output;
         #endregion
 
         #region Constructors
-        public DataLoader(StreamReader inf, ExcelPackage outf)
+        public DataLoader(StreamReader inf, ExcelPackage outf, String method)
         {
+            FileInfo fi = new FileInfo("CheckStandards.xlsx");
+            if (!fi.Exists)
+                throw new FileNotFoundException("Error: The CheckStandards.xlsx config file does not exist or could not be found and the input file could not be parsed.\t\nPlease refer to the user manual for instructions on how to use the config file.");
+
+            ExcelPackage config = new ExcelPackage(fi);
+
+            foreach (ExcelWorksheet ws in config.Workbook.Worksheets)
+            {
+                if (ws.Cells[1, 1].Value.ToString().Equals(method))
+                    this.Standardsws = ws;
+            }
+
+            if (Standardsws == null)
+                throw new ConfigurationErrorException("Error: Could not find a configuration sheet that matches the method: " + method);
+
             this.Input = inf;
             this.Output = outf;
             this.Output.Workbook.Worksheets.Add("Data");
@@ -58,7 +74,7 @@ namespace WaterAnalysisTool.Loader
                 throw new ArgumentOutOfRangeException("Invalid number of worksheets present in workbook.\n");
             #endregion
 
-            DataLoaderParser parser = new DataLoaderParser(this, Input);
+            DataParser parser = new DataParser(this, Input, Standardsws);
             parser.Parse();
 
             var dataws = this.Output.Workbook.Worksheets[1]; // The Data worksheet should be the first worksheet, indeces start at 1.
@@ -128,14 +144,14 @@ namespace WaterAnalysisTool.Loader
 
                 this.Output.Save();
 
-                this.Messages.Add("Formatted Excel sheet generated successfullly.");
+                this.Messages.Add("Success: Formatted Excel sheet generated.");
             }
 
             else
-                this.Messages.Add("Parser found zero generic samples. Could not genereate formmated Excel sheet.");
+                this.Messages.Add("Error: Parser found zero generic samples. Could not generate formatted Excel sheet.");
 
             foreach (String msg in this.Messages)
-                Console.WriteLine("\t" + msg);
+                Console.WriteLine(msg);
         } // end Load
 
         #region Add<Sample>
@@ -485,13 +501,16 @@ namespace WaterAnalysisTool.Loader
             }
             #endregion
 
-            this.Messages.Add(type + " written to excel sheet successfully");
+            this.Messages.Add("Success: " + type + "(" + samples.Name + ") written to Excel Worksheet.");
 
             return  row + 2;
         }// end WriteSamples
 
         private void WriteStandards(ExcelWorksheet calibws, SampleGroup standards)
         {
+            int endRow = 0;
+            int numSamples = 0;
+
             // Write element header rows
             Sample headerSample = standards.Samples[standards.Samples.Count - 1];
 
@@ -510,168 +529,172 @@ namespace WaterAnalysisTool.Loader
             }
 
             // Write standards data
-            int row = 4;
+            bool found = false;
+            int row = 4, elementRow = 2;
             col = 1;
-
-            foreach (Sample s in standards.Samples)
+            
+            try
             {
-                col = 1;
+                foreach (Sample s in standards.Samples)
+                {
+                    col = 1;
 
-                calibws.Cells[row, col].Value = s.Name;
-                calibws.Cells[row, ++col].Value = s.RunTime;
+                    String str;
+                    calibws.Cells[row, col].Value = s.Name;
+                    calibws.Cells[row, ++col].Value = s.RunTime;
 
-                foreach (Element e in s.Elements)
-                    calibws.Cells[row, ++col].Value = e.Average;
+                    col = 3;
+                    foreach (Element e in s.Elements)
+                    {
+                        found = false;
+                        for (col = 3; calibws.Cells[elementRow, col].Value != null && !found; col++)
+                        {
+                            str = calibws.Cells[elementRow, col].Value.ToString();
+                            if (e.Name.Equals(str))
+                            {
+                                found = true;
+                                calibws.Cells[row, col].Value = e.Average;
+                            }
+                        }
+                    }
 
-                row++;
+                    row++;
+                }
+
+                numSamples = row - 4;
+                endRow = row + 2;
+
+                this.Messages.Add("Success: Calibration standards written to Excel Worksheet.");
             }
-
-            int numSamples = row - 4;
-
-            int endRow = row + 2;
-
-            this.Messages.Add("Calibration standards written to excel sheet successfully");
+            
+            catch(Exception e)
+            {
+               this.Messages.Add("Error: Could not write Calibration standards to Excel Worksheet. Reason: " + e.Message); 
+            }
 
             // Calibration Curve
             // 1. Open the CheckStandards.xlsx sheet where the stock solution concentrations can be found and read them in
             //  1.1 Have to worry about not every concentration in the standards list (these will have to be 0's in the .xlsx)
             // 2. Create a graph with the measured counts per second in the standards list over their respective stock solution concentration
-            try
+       
+            // Find Calibration Standards section
+            row = 1;
+            int blankCount = 0;
+
+            while(blankCount < 5 && blankCount >= 0)
             {
-                FileInfo fi = new FileInfo("CheckStandards.xlsx");
-                if (!fi.Exists)
-                    throw new FileNotFoundException("The CheckStandards.xlsx config file does not exist or could not be found and a calibration curve could not be generated.");
-
-                using (var p = new ExcelPackage(fi))
+                if(Standardsws.Cells[row, 1].Value != null)
                 {
-                    ExcelWorksheet standardsws = p.Workbook.Worksheets[2]; // This index [2] may change depending on if the CheckStandards.xlxs file changing
-
-                    // Find Calibration Standards section
-                    row = 1;
-                    int blankCount = 0;
-
-                    while(blankCount < 5 && blankCount >= 0)
+                    if(!Standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("calibration standards"))
                     {
-                        if(standardsws.Cells[row, 1].Value != null)
-                        {
-                            if(!standardsws.Cells[row, 1].Value.ToString().ToLower().Equals("calibration standards"))
-                            {
-                                 row++;
-                                 blankCount = 0;
-                            }
-                            else
-                                break;
-                        }
-
-                        else
-                        {
-                            blankCount++;
                             row++;
-                        }
+                            blankCount = 0;
                     }
-
-                    if(blankCount > 4)
-                        throw new ConfigurationErrorException("Could not find \"Calibration Standards\" section in CheckStandards.xlsx config file.");
-
-                    row++;
-
-                    // Find element names and amount of elements
-                    int elemCol = 3, elemRow = 1;
-
-                    while (standardsws.Cells[elemRow, elemCol].Value == null)
-                        elemRow++;
-
-                    while(standardsws.Cells[elemRow, elemCol].Value != null)
-                    {
-                        calibws.Cells[endRow, elemCol].Value = standardsws.Cells[elemRow, elemCol].Value;
-                        calibws.Cells[endRow + 1, elemCol].Value = standardsws.Cells[elemRow + 1, elemCol].Value;
-                        calibws.Cells[endRow, elemCol].Style.Font.Bold = true;
-                        calibws.Cells[endRow + 1, elemCol].Style.Font.Bold = true;
-                        elemCol++;
-                    }
-
-                    endRow += 2;
-                    int startRow = endRow;
-                    int numStandards = 0;
-
-                    for ( ; standardsws.Cells[row, col].Value != null; row++)
-                    {
-                        for(col = 1; col < elemCol; col++)
-                            calibws.Cells[endRow, col].Value = standardsws.Cells[row, col].Value;
-
-                        col = 1;
-                        endRow++;
-                        numStandards++;
-                    }
-
-                    // CREATE CHARTS
-
-                    ExcelChart newGraph = null;
-                    ExcelRange yrange = null, xrange = null;
-                    ExcelChartSerie s = null;
-
-                    bool found = false;
-
-                    int count = 0, graphCol = 1, graphRow = endRow + 2;
-
-                    // Search through Standard element names to match up with Sample element names, and graph them
-                    for (int sampleElementCol = 3; calibws.Cells[2, sampleElementCol].Value != null; sampleElementCol++)
-                    {
-                        found = false;
-                        for (int standardElementCol = 3; standardElementCol < elemCol && !found; standardElementCol++)
-                        {
-                            //startRow = beginning of standards section
-                            if (calibws.Cells[2, sampleElementCol].Value.Equals(calibws.Cells[startRow - 2, standardElementCol].Value))
-                            {
-                                //you found the matching one, graph it!
-                                found = true;
-
-                                yrange = calibws.Cells[4, sampleElementCol, 3 + numSamples, sampleElementCol];
-                                xrange = calibws.Cells[startRow, standardElementCol, numStandards + startRow - 1, standardElementCol];
-
-                                newGraph = calibws.Drawings.AddChart(calibws.Cells[2, sampleElementCol].Value.ToString(), eChartType.XYScatter);
-                                newGraph.Title.Text = calibws.Cells[2, sampleElementCol].Value.ToString();
-
-                                // This is for output formatting
-                                if(count < 5)
-                                {
-                                    newGraph.SetPosition(graphRow, 0, graphCol, 0);
-                                    graphCol += 5;
-                                    count++;
-                                }
-                                else
-                                {
-                                    count = 0;
-                                    graphCol = 1;
-                                    graphRow += 17;
-
-                                    newGraph.SetPosition(graphRow, 0, graphCol, 0);
-                                    graphCol += 5;
-                                    count++;
-                                }
-                                
-                                newGraph.SetSize(300, 250);
-                                newGraph.YAxis.MinValue = 0;
-                                newGraph.XAxis.MinValue = 0;
-
-                                s = newGraph.Series.Add(yrange, xrange);
-                                ExcelChartTrendline tl = s.TrendLines.Add(eTrendLine.Linear);
-                                tl.DisplayRSquaredValue = false;
-                                tl.DisplayEquation = false;
-                            }
-                        }
-                    }             
-                    
+                    else
+                        break;
                 }
 
-
-                this.Messages.Add("Calibration curve generated successfully");
+                else
+                {
+                    blankCount++;
+                    row++;
+                }
             }
 
-            catch (Exception e)
+            if(blankCount > 4)
+                throw new ConfigurationErrorException("Could not find \"Calibration Standards\" section in CheckStandards.xlsx config file.");
+
+            row++;
+
+            // Find element names and amount of elements
+            int elemCol = 3, elemRow = 1;
+
+            while (Standardsws.Cells[elemRow, elemCol].Value == null)
+                elemRow++;
+
+            while(Standardsws.Cells[elemRow, elemCol].Value != null)
             {
-                this.Messages.Add("Calibration curve could not be generated. Error: " + e.Message);
+                calibws.Cells[endRow, elemCol].Value = Standardsws.Cells[elemRow, elemCol].Value;
+                calibws.Cells[endRow + 1, elemCol].Value = Standardsws.Cells[elemRow + 1, elemCol].Value;
+                calibws.Cells[endRow, elemCol].Style.Font.Bold = true;
+                calibws.Cells[endRow + 1, elemCol].Style.Font.Bold = true;
+                elemCol++;
             }
+
+            endRow += 2;
+            int startRow = endRow;
+            int numStandards = 0;
+            col = 1;
+
+            for ( ; Standardsws.Cells[row, col].Value != null; row++)
+            {
+                for(col = 1; col < elemCol; col++)
+                    calibws.Cells[endRow, col].Value = Standardsws.Cells[row, col].Value;
+
+                col = 1;
+                endRow++;
+                numStandards++;
+            }
+
+                #region Calibration Curves
+                ExcelChart newGraph = null;
+                ExcelRange yrange = null, xrange = null;
+                ExcelChartSerie serie = null;
+
+                found = false;
+
+                int count = 0, graphCol = 1, graphRow = endRow + 2;
+
+                // Search through Standard element names to match up with Sample element names, and graph them
+                for (int sampleElementCol = 3; calibws.Cells[2, sampleElementCol].Value != null; sampleElementCol++)
+                {
+                    found = false;
+                    for (int standardElementCol = 3; standardElementCol < elemCol && !found; standardElementCol++)
+                    {
+                        //startRow = beginning of standards section
+                        if (calibws.Cells[2, sampleElementCol].Value.Equals(calibws.Cells[startRow - 2, standardElementCol].Value))
+                        {
+                            //you found the matching one, graph it!
+                            found = true;
+
+                            yrange = calibws.Cells[4, sampleElementCol, 3 + numSamples, sampleElementCol];
+                            xrange = calibws.Cells[startRow, standardElementCol, numStandards + startRow - 1, standardElementCol];
+
+                            newGraph = calibws.Drawings.AddChart(calibws.Cells[2, sampleElementCol].Value.ToString(), eChartType.XYScatter);
+                            newGraph.Title.Text = calibws.Cells[2, sampleElementCol].Value.ToString();
+
+                            // This is for output formatting
+                            if(count < 5)
+                            {
+                                newGraph.SetPosition(graphRow, 0, graphCol, 0);
+                                graphCol += 5;
+                                count++;
+                            }
+                            else
+                            {
+                                count = 0;
+                                graphCol = 1;
+                                graphRow += 17;
+
+                                newGraph.SetPosition(graphRow, 0, graphCol, 0);
+                                graphCol += 5;
+                                count++;
+                            }
+                                
+                            newGraph.SetSize(300, 250);
+                            newGraph.YAxis.MinValue = 0;
+                            newGraph.XAxis.MinValue = 0;
+
+                            serie = newGraph.Series.Add(yrange, xrange);
+                            ExcelChartTrendline tl = serie.TrendLines.Add(eTrendLine.Linear);
+                            tl.DisplayRSquaredValue = false;
+                            tl.DisplayEquation = false;
+                        }
+                    }
+                }             
+
+                this.Messages.Add("Success: Calibration curves generated.");
+                #endregion
         }// end WriteStandards
         #endregion
     }   
