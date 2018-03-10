@@ -46,7 +46,6 @@ namespace WaterAnalysisTool.Loader
 
         public void Parse()
         {
-            this.Input.ReadLine(); // Consumes empty line at the beginning of the file
             this.ParseCheckStandards();
 
             while (this.Input.Peek() >= 0)
@@ -211,12 +210,16 @@ namespace WaterAnalysisTool.Loader
         {
             Sample sample;
             List<string> stringList = new List<string>();
-            string tmp;
+            string tmp = "";
 
-            if (this.Input.Peek() >= 0)
-                this.Input.ReadLine(); // Consumes "[Sample Header]"
-            else
-                throw new FormatException("The file used as input is not formatted correctly.\n");
+            for (int x = 0; x < 2; x++)
+            {
+                if (this.Input.Peek() >= 0)
+                    tmp = this.Input.ReadLine();
+            }
+
+            if (!(tmp.Equals("[Sample Header]")))
+                throw new FormatException("The Sample Header section of the input file could not be found.\n");
 
             if (this.Input.Peek() >= 0) // Start reading in sample meta data
             {
@@ -229,14 +232,14 @@ namespace WaterAnalysisTool.Loader
                     if (this.Input.Peek() >= 0)
                         tmp = this.Input.ReadLine();
                     else
-                        throw new FormatException("The file used as input is not formatted correctly.\n");
+                        throw new FormatException("The Sample Header section of the input file is not formatted correctly.\n");
                 }
 
                 if (stringList.Count != 12)
-                    throw new FormatException("The file used as input is not formatted correctly.\n");
+                    throw new FormatException("The Sample Header section of the input file is not formatted correctly.\n");
             }
             else
-                throw new FormatException("The file used as input is not formatted correctly. ParseHeader4\n");
+                throw new FormatException("The Sample Header section of the input file is not formatted correctly.\n");
 
             stringList[1] = stringList[1].Replace("SampleName=", ""); // SampleName trimming
             stringList[3] = stringList[3].Replace("Comment=", ""); // Comment trimming
@@ -244,24 +247,32 @@ namespace WaterAnalysisTool.Loader
             stringList[8] = stringList[8].Replace("Sample Type=", ""); // SampleType trimming
             stringList[11] = stringList[11].Replace("Repeats=", ""); // Repeats trimming
 
-            sample = CreateSample(stringList[0], stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11])); // TODO int.Parse() throws a FormatException (not a number)
+            sample = CreateSample(stringList[0], stringList[1], stringList[3], stringList[7], stringList[8], int.Parse(stringList[11]));
 
             return sample;
         }
 
 
-        private void ParseResults(Sample sample)
+        private void ParseResults (Sample sample)
         {
             this.CheckForNullSample(sample);
             List<string> stringList = new List<string>();
-            string tmp;
+            string tmp = "";
 
-            for (int x = 0; x < 2; x++) // Consumes line containing "[Results]", line containing labels for elements "Elem,Units,Avg,Stddev,RSD"
+            if (this.Input.Peek() >= 0) // Consumes line containing "[Results]", line containing labels for elements "Elem,Units,Avg,Stddev,RSD"
             {
-                if (this.Input.Peek() >= 0)
-                    this.Input.ReadLine();
-                else
-                    throw new FormatException("The file used as input is not formatted correctly\n");
+                tmp = this.Input.ReadLine();
+
+                if (!(tmp.Equals("[Results]")))
+                    throw new FormatException("The Results section of the input file could not be found.\n");
+            }
+
+            if (this.Input.Peek() >= 0)
+            {
+                tmp = this.Input.ReadLine();
+
+                if (!(tmp.Equals("Elem,Units,Avg,Stddev,RSD")))
+                    throw new FormatException("The Results section of the input file is not formatted correctly.\n");
             }
 
             if (this.Input.Peek() >= 0) // Start reading in elements data
@@ -275,9 +286,11 @@ namespace WaterAnalysisTool.Loader
                     if (this.Input.Peek() >= 0)
                         tmp = this.Input.ReadLine();
                     else
-                        throw new FormatException("The file used as input is not formatted correctly.\n");
+                        throw new FormatException("The Results section of the input file is not formatted correctly.\n");
                 }
             }
+            else
+                throw new FormatException("The Results section of the input file could not be found.\n");
 
             foreach (string str in stringList) // Data scrubbing and Element creation
             {
@@ -307,20 +320,24 @@ namespace WaterAnalysisTool.Loader
         {
             this.CheckForNullSample(sample);
 
-            string str;
+            string str = "";
             string[] strList;
 
             if (this.Input.Peek() >= 0)
-                this.Input.ReadLine(); // Consumes line containing "[Internal Standards]"
+                str = this.Input.ReadLine(); // Consumes line containing "[Internal Standards]"
             else
-                throw new FormatException("The file used as input is not formatted correctly.\n");
+                throw new FormatException("The Internal Standards section of the input file could not be found.\n");
+
+            if (!(str.Equals("[Internal Standards]")))
+                throw new FormatException("The Internal Standards section of the input file is not formatted correctly.\n");
 
             if (this.Input.Peek() >= 0)
             {
                 str = this.Input.ReadLine();
                 strList = str.Split(',');
-                this.Input.ReadLine(); // Consumes empty line after Internal Standards section
             }
+            else
+                throw new FormatException("The Internal Standards section of the input file is not formatted correctly.\n");
         }
 
 
